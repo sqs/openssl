@@ -1,5 +1,5 @@
 /* crypto/asn1/a_type.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -60,9 +60,7 @@
 #include "cryptlib.h"
 #include "asn1_mac.h"
 
-/* ASN1err(ASN1_F_ASN1_TYPE_NEW,ASN1_R_ERROR_STACK);
- * ASN1err(ASN1_F_D2I_ASN1_BYTES,ASN1_R_ERROR_STACK);
- * ASN1err(ASN1_F_D2I_ASN1_BYTES,ASN1_R_WRONG_TAG);
+/* ASN1err(ASN1_F_D2I_ASN1_BYTES,ASN1_R_WRONG_TAG);
  * ASN1err(ASN1_F_ASN1_COLLATE_PRIMATIVE,ASN1_R_WRONG_TAG);
  */
 
@@ -115,8 +113,14 @@ unsigned char **pp;
 	case V_ASN1_UNIVERSALSTRING:
 		r=M_i2d_ASN1_UNIVERSALSTRING(a->value.universalstring,pp);
 		break;
+	case V_ASN1_BMPSTRING:
+		r=M_i2d_ASN1_BMPSTRING(a->value.bmpstring,pp);
+		break;
 	case V_ASN1_UTCTIME:
 		r=i2d_ASN1_UTCTIME(a->value.utctime,pp);
+		break;
+	case V_ASN1_GENERALIZEDTIME:
+		r=i2d_ASN1_GENERALIZEDTIME(a->value.generalizedtime,pp);
 		break;
 	case V_ASN1_SET:
 	case V_ASN1_SEQUENCE:
@@ -213,9 +217,19 @@ long length;
 			M_d2i_ASN1_UNIVERSALSTRING(NULL,&p,max-p)) == NULL)
 			goto err;
 		break;
+	case V_ASN1_BMPSTRING:
+		if ((ret->value.bmpstring=
+			M_d2i_ASN1_BMPSTRING(NULL,&p,max-p)) == NULL)
+			goto err;
+		break;
 	case V_ASN1_UTCTIME:
 		if ((ret->value.utctime=
 			d2i_ASN1_UTCTIME(NULL,&p,max-p)) == NULL)
+			goto err;
+		break;
+	case V_ASN1_GENERALIZEDTIME:
+		if ((ret->value.generalizedtime=
+			d2i_ASN1_GENERALIZEDTIME(NULL,&p,max-p)) == NULL)
 			goto err;
 		break;
 	case V_ASN1_SET:
@@ -244,6 +258,7 @@ err:
 ASN1_TYPE *ASN1_TYPE_new()
 	{
 	ASN1_TYPE *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,ASN1_TYPE);
 	ret->type= -1;
@@ -296,14 +311,20 @@ ASN1_TYPE *a;
 		case V_ASN1_NEG_INTEGER:
 		case V_ASN1_BIT_STRING:
 		case V_ASN1_OCTET_STRING:
+		case V_ASN1_SEQUENCE:
+		case V_ASN1_SET:
+		case V_ASN1_NUMERICSTRING:
 		case V_ASN1_PRINTABLESTRING:
 		case V_ASN1_T61STRING:
+		case V_ASN1_VIDEOTEXSTRING:
 		case V_ASN1_IA5STRING:
-		case V_ASN1_UNIVERSALSTRING:
-		case V_ASN1_GENERALSTRING:
 		case V_ASN1_UTCTIME:
-		case V_ASN1_SET:
-		case V_ASN1_SEQUENCE:
+		case V_ASN1_GENERALIZEDTIME:
+		case V_ASN1_GRAPHICSTRING:
+		case V_ASN1_VISIBLESTRING:
+		case V_ASN1_GENERALSTRING:
+		case V_ASN1_UNIVERSALSTRING:
+		case V_ASN1_BMPSTRING:
 			ASN1_STRING_free((ASN1_STRING *)a->value.ptr);
 			break;
 		default:
