@@ -1,5 +1,5 @@
 /* crypto/lhash/lhash.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -102,9 +102,15 @@ typedef struct lhash_st
 	unsigned long num_retrieve;
 	unsigned long num_retrieve_miss;
 	unsigned long num_hash_comps;
+
+	int error;
 	} LHASH;
 
 #define LH_LOAD_MULT	256
+
+/* Indicates a malloc() error in the last call, this is only bad
+ * in lh_insert(). */
+#define lh_error(lh)	((lh)->error)
 
 #ifndef NOPROTO
 LHASH *lh_new(unsigned long (*h)(), int (*c)());
@@ -114,9 +120,9 @@ char *lh_delete(LHASH *lh, char *data);
 char *lh_retrieve(LHASH *lh, char *data);
 void lh_doall(LHASH *lh, void (*func)(/* char *b */));
 void lh_doall_arg(LHASH *lh, void (*func)(/*char *a,char *b*/),char *arg);
-unsigned long lh_strhash(char *c);
+unsigned long lh_strhash(const char *c);
 
-#ifndef WIN16
+#ifndef NO_FP_API
 void lh_stats(LHASH *lh, FILE *out);
 void lh_node_stats(LHASH *lh, FILE *out);
 void lh_node_usage_stats(LHASH *lh, FILE *out);
@@ -137,7 +143,7 @@ void lh_doall();
 void lh_doall_arg();
 unsigned long lh_strhash();
 
-#ifndef WIN16
+#ifndef NO_FP_API
 void lh_stats();
 void lh_node_stats();
 void lh_node_usage_stats();

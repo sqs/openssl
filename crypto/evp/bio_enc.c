@@ -1,5 +1,5 @@
 /* crypto/evp/bio_enc.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -116,6 +116,7 @@ BIO *bi;
 	BIO_ENC_CTX *ctx;
 
 	ctx=(BIO_ENC_CTX *)Malloc(sizeof(BIO_ENC_CTX));
+	EVP_CIPHER_CTX_init(&ctx->cipher);
 	if (ctx == NULL) return(0);
 
 	ctx->buf_len=0;
@@ -297,6 +298,7 @@ char *ptr;
 	BIO_ENC_CTX *ctx,*dctx;
 	long ret=1;
 	int i;
+	EVP_CIPHER_CTX **c_ctx;
 
 	ctx=(BIO_ENC_CTX *)b->ptr;
 
@@ -363,7 +365,11 @@ again:
 		ret=BIO_ctrl(b->next_bio,cmd,num,ptr);
 		BIO_copy_next_retry(b);
 		break;
-
+	case BIO_C_GET_CIPHER_CTX:
+		c_ctx=(EVP_CIPHER_CTX **)ptr;
+		(*c_ctx)= &(ctx->cipher);
+		b->init=1;
+		break;
 	case BIO_CTRL_DUP:
 		dbio=(BIO *)ptr;
 		dctx=(BIO_ENC_CTX *)dbio->ptr;
@@ -377,9 +383,29 @@ again:
 	return(ret);
 	}
 
+/*
+void BIO_set_cipher_ctx(b,c)
+BIO *b;
+EVP_CIPHER_ctx *c;
+	{
+	if (b == NULL) return;
+
+	if ((b->callback != NULL) &&
+		(b->callback(b,BIO_CB_CTRL,(char *)c,BIO_CTRL_SET,e,0L) <= 0))
+		return;
+
+	b->init=1;
+	ctx=(BIO_ENC_CTX *)b->ptr;
+	memcpy(ctx->cipher,c,sizeof(EVP_CIPHER_CTX));
+	
+	if (b->callback != NULL)
+		b->callback(b,BIO_CB_CTRL,(char *)c,BIO_CTRL_SET,e,1L);
+	}
+*/
+
 void BIO_set_cipher(b,c,k,i,e)
 BIO *b;
-EVP_CIPHER *c;
+const EVP_CIPHER *c;
 unsigned char *k;
 unsigned char *i;
 int e;
@@ -389,7 +415,7 @@ int e;
 	if (b == NULL) return;
 
 	if ((b->callback != NULL) &&
-		(b->callback(b,BIO_CB_CTRL,(char *)c,BIO_CTRL_SET,e,0L) <= 0))
+		(b->callback(b,BIO_CB_CTRL,(const char *)c,BIO_CTRL_SET,e,0L) <= 0))
 		return;
 
 	b->init=1;
@@ -397,6 +423,6 @@ int e;
 	EVP_CipherInit(&(ctx->cipher),c,k,i,e);
 	
 	if (b->callback != NULL)
-		b->callback(b,BIO_CB_CTRL,(char *)c,BIO_CTRL_SET,e,1L);
+		b->callback(b,BIO_CB_CTRL,(const char *)c,BIO_CTRL_SET,e,1L);
 	}
 

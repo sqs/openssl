@@ -1,5 +1,5 @@
 /* crypto/x509/x_all.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -100,7 +100,7 @@ EVP_PKEY *r;
 int X509_sign(x,pkey,md)
 X509 *x;
 EVP_PKEY *pkey;
-EVP_MD *md;
+const EVP_MD *md;
 	{
 	return(ASN1_sign((int (*)())i2d_X509_CINF, x->cert_info->signature,
 		x->sig_alg, x->signature, (char *)x->cert_info,pkey,md));
@@ -109,7 +109,7 @@ EVP_MD *md;
 int X509_REQ_sign(x,pkey,md)
 X509_REQ *x;
 EVP_PKEY *pkey;
-EVP_MD *md;
+const EVP_MD *md;
 	{
 	return(ASN1_sign((int (*)())i2d_X509_REQ_INFO,x->sig_alg, NULL,
 		x->signature, (char *)x->req_info,pkey,md));
@@ -118,7 +118,7 @@ EVP_MD *md;
 int X509_CRL_sign(x,pkey,md)
 X509_CRL *x;
 EVP_PKEY *pkey;
-EVP_MD *md;
+const EVP_MD *md;
 	{
 	return(ASN1_sign((int (*)())i2d_X509_CRL_INFO,x->crl->sig_alg,
 		x->sig_alg, x->signature, (char *)x->crl,pkey,md));
@@ -127,10 +127,17 @@ EVP_MD *md;
 int NETSCAPE_SPKI_sign(x,pkey,md)
 NETSCAPE_SPKI *x;
 EVP_PKEY *pkey;
-EVP_MD *md;
+const EVP_MD *md;
 	{
 	return(ASN1_sign((int (*)())i2d_NETSCAPE_SPKAC, x->sig_algor,NULL,
 		x->signature, (char *)x->spkac,pkey,md));
+	}
+
+X509_ATTRIBUTE *X509_ATTRIBUTE_dup(xa)
+X509_ATTRIBUTE *xa;
+	{
+	return((X509_ATTRIBUTE *)ASN1_dup((int (*)())i2d_X509_ATTRIBUTE,
+		(char *(*)())d2i_X509_ATTRIBUTE,(char *)xa));
 	}
 
 X509 *X509_dup(x509)
@@ -148,7 +155,7 @@ X509_EXTENSION *ex;
 		(char *(*)())d2i_X509_EXTENSION,(char *)ex));
 	}
 
-#ifndef WIN16
+#ifndef NO_FP_API
 X509 *d2i_X509_fp(fp,x509)
 FILE *fp;
 X509 *x509;
@@ -187,7 +194,7 @@ X509_CRL *crl;
 		(char *(*)())d2i_X509_CRL,(char *)crl));
 	}
 
-#ifndef WIN16
+#ifndef NO_FP_API
 X509_CRL *d2i_X509_CRL_fp(fp,crl)
 FILE *fp;
 X509_CRL *crl;
@@ -228,7 +235,7 @@ PKCS7 *p7;
 		(char *(*)())d2i_PKCS7,(char *)p7));
 	}
 
-#ifndef WIN16
+#ifndef NO_FP_API
 PKCS7 *d2i_PKCS7_fp(fp,p7)
 FILE *fp;
 PKCS7 *p7;
@@ -269,7 +276,7 @@ X509_REQ *req;
 		(char *(*)())d2i_X509_REQ,(char *)req));
 	}
 
-#ifndef WIN16
+#ifndef NO_FP_API
 X509_REQ *d2i_X509_REQ_fp(fp,req)
 FILE *fp;
 X509_REQ *req;
@@ -318,7 +325,7 @@ RSA *rsa;
 		(char *(*)())d2i_RSAPrivateKey,(char *)rsa));
 	}
 
-#ifndef WIN16
+#ifndef NO_FP_API
 RSA *d2i_RSAPrivateKey_fp(fp,rsa)
 FILE *fp;
 RSA *rsa;
@@ -386,7 +393,7 @@ RSA *rsa;
 #endif
 
 #ifndef NO_DSA
-#ifndef WIN16
+#ifndef NO_FP_API
 DSA *d2i_DSAPrivateKey_fp(fp,dsa)
 FILE *fp;
 DSA *dsa;
@@ -420,6 +427,13 @@ DSA *dsa;
 	return(ASN1_i2d_bio(i2d_DSAPrivateKey,bp,(unsigned char *)dsa));
 	}
 #endif
+
+X509_ALGOR *X509_ALGOR_dup(xn)
+X509_ALGOR *xn;
+	{
+	return((X509_ALGOR *)ASN1_dup((int (*)())i2d_X509_ALGOR,
+	(char *(*)())d2i_X509_ALGOR,(char *)xn));
+	}
 
 X509_NAME *X509_NAME_dup(xn)
 X509_NAME *xn;

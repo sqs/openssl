@@ -1,5 +1,5 @@
 /* crypto/asn1/a_object.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -64,7 +64,7 @@
 
 /* ASN1err(ASN1_F_ASN1_OBJECT_NEW,ASN1_R_EXPECTING_AN_OBJECT); 
  * ASN1err(ASN1_F_D2I_ASN1_OBJECT,ASN1_R_BAD_OBJECT_HEADER); 
- * ASN1err(ASN1_F_I2A_ASN1_OBJECT,ASN1_R_BAD_OBJECT_HEADER);
+ * ASN1err(ASN1_F_I2T_ASN1_OBJECT,ASN1_R_BAD_OBJECT_HEADER);
  */
 
 int i2d_ASN1_OBJECT(a, pp)
@@ -90,11 +90,12 @@ unsigned char **pp;
 int a2d_ASN1_OBJECT(out,olen,buf,num)
 unsigned char *out;
 int olen;
-char *buf;
+const char *buf;
 int num;
 	{
 	int i,first,len=0,c;
-	char tmp[24],*p;
+	char tmp[24];
+	const char *p;
 	unsigned long l;
 
 	if (num == 0)
@@ -180,19 +181,23 @@ err:
 	return(0);
 	}
 
-int i2a_ASN1_OBJECT(bp,a)
-BIO *bp;
+int i2t_ASN1_OBJECT(buf,buf_len,a)
+char *buf;
+int buf_len;
 ASN1_OBJECT *a;
 	{
-	int j,i,idx=0,n=0,len,nid,reason=ERR_R_BUF_LIB;
+	int i,idx=0,n=0,len,nid;
 	unsigned long l;
 	unsigned char *p;
-	char buf[20];
-	char *s;
+	const char *s;
+	char tbuf[32];
+
+	if (buf_len <= 0) return(0);
 
 	if ((a == NULL) || (a->data == NULL))
 		{
-		return(BIO_write(bp,"NULL",4));
+		buf[0]='\0';
+		return(0);
 		}
 
 	nid=OBJ_obj2nid(a);
@@ -215,10 +220,11 @@ ASN1_OBJECT *a;
 		if (i > 2) i=2;
 		l-=(long)(i*40);
 
-		sprintf(buf,"%d.%ld",i,l);
-		i=strlen(buf);
-		if (BIO_write(bp,buf,i) != i)
-				goto err;
+		sprintf(tbuf,"%d.%ld",i,l);
+		i=strlen(tbuf);
+		strncpy(buf,tbuf,buf_len);
+		buf_len-=i;
+		buf+=i;
 		n+=i;
 
 		l=0;
@@ -227,9 +233,12 @@ ASN1_OBJECT *a;
 			l|=p[idx]&0x7f;
 			if (!(p[idx] & 0x80))
 				{
-				sprintf(buf,".%ld",l);
-				i=strlen(buf);
-				if (BIO_write(bp,buf,i) != i) goto err;
+				sprintf(tbuf,".%ld",l);
+				i=strlen(tbuf);
+				if (buf_len > 0)
+					strncpy(buf,tbuf,buf_len);
+				buf_len-=i;
+				buf+=i;
 				n+=i;
 				l=0;
 				}
@@ -238,17 +247,29 @@ ASN1_OBJECT *a;
 		}
 	else
 		{
-		s=(char *)OBJ_nid2ln(nid);
+		s=OBJ_nid2ln(nid);
 		if (s == NULL)
-			s=(char *)OBJ_nid2sn(nid);
-		j=strlen(s);
-		if (BIO_write(bp,s,j) != j) goto err;
-		n=j;
+			s=OBJ_nid2sn(nid);
+		strncpy(buf,s,buf_len);
+		n=strlen(s);
 		}
+	buf[buf_len-1]='\0';
 	return(n);
-err:
-	ASN1err(ASN1_F_I2A_ASN1_OBJECT,reason);
-	return(-1);
+	}
+
+int i2a_ASN1_OBJECT(bp,a)
+BIO *bp;
+ASN1_OBJECT *a;
+	{
+	char buf[80];
+	int i;
+
+	if ((a == NULL) || (a->data == NULL))
+		return(BIO_write(bp,"NULL",4));
+	i=i2t_ASN1_OBJECT(buf,80,a);
+	if (i > 80) i=80;
+	BIO_write(bp,buf,i);
+	return(i);
 	}
 
 ASN1_OBJECT *d2i_ASN1_OBJECT(a, pp, length)
@@ -335,8 +356,10 @@ ASN1_OBJECT *a;
 	if (a == NULL) return;
 	if (a->flags & ASN1_OBJECT_FLAG_DYNAMIC_STRINGS)
 		{
-		if (a->sn != NULL) Free(a->sn);
-		if (a->ln != NULL) Free(a->ln);
+#ifndef CONST_STRICT /* disable purely for compile-time strict const checking. Doing this on a "real" compile will cause mempory leaks */
+		if (a->sn != NULL) Free((void *)a->sn);
+		if (a->ln != NULL) Free((void *)a->ln);
+#endif
 		a->sn=a->ln=NULL;
 		}
 	if (a->flags & ASN1_OBJECT_FLAG_DYNAMIC_DATA)
@@ -346,7 +369,7 @@ ASN1_OBJECT *a;
 		a->length=0;
 		}
 	if (a->flags & ASN1_OBJECT_FLAG_DYNAMIC)
-		Free((char *)a);
+		Free(a);
 	}
 
 ASN1_OBJECT *ASN1_OBJECT_create(nid,data,len,sn,ln)
@@ -362,8 +385,8 @@ char *sn,*ln;
 	o.data=data;
 	o.nid=nid;
 	o.length=len;
-	o.flags=ASN1_OBJECT_FLAG_DYNAMIC|
-		ASN1_OBJECT_FLAG_DYNAMIC_STRINGS|ASN1_OBJECT_FLAG_DYNAMIC_DATA;
+	o.flags=ASN1_OBJECT_FLAG_DYNAMIC|ASN1_OBJECT_FLAG_DYNAMIC_STRINGS|
+		ASN1_OBJECT_FLAG_DYNAMIC_DATA;
 	return(OBJ_dup(&o));
 	}
 

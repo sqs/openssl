@@ -1,5 +1,5 @@
 /* crypto/x509/x509_obj.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -71,13 +71,14 @@ int len;
 	X509_NAME_ENTRY *ne;
 	unsigned int i;
 	int n,lold,l,l1,l2,num,j,type;
-	char *s,*p;
+	const char *s;
+	char *p;
 	unsigned char *q;
 	BUF_MEM *b=NULL;
 	static char hex[17]="0123456789ABCDEF";
 	int gs_doit[4];
+	char tmp_buf[80];
 
-	if (a == NULL) return("NO X509_NAME");
 	if (buf == NULL)
 		{
 		if ((b=BUF_MEM_new()) == NULL) goto err;
@@ -85,6 +86,16 @@ int len;
 		b->data[0]='\0';
 		len=200;
 		}
+	if (a == NULL)
+	    {
+	    if(b)
+		{
+		buf=b->data;
+		Free(b);
+		}
+	    strncpy(buf,"NO X509_NAME",len);
+	    return buf;
+	    }
 
 	len--; /* space for '\0' */
 	l=0;
@@ -92,12 +103,10 @@ int len;
 		{
 		ne=(X509_NAME_ENTRY *)sk_value(a->entries,i);
 		n=OBJ_obj2nid(ne->object);
-		if (n == NID_undef)
-			s="UNKNOWN";
-		else
+		if ((n == NID_undef) || ((s=OBJ_nid2sn(n)) == NULL))
 			{
-			s=OBJ_nid2sn(n);
-			if (s == NULL) s="UNKNOWN2";
+			i2t_ASN1_OBJECT(tmp_buf,sizeof(tmp_buf),ne->object);
+			s=tmp_buf;
 			}
 		l1=strlen(s);
 
@@ -167,7 +176,7 @@ int len;
 	if (b != NULL)
 		{
 		p=b->data;
-		Free((char *)b);
+		Free(b);
 		}
 	else
 		p=buf;

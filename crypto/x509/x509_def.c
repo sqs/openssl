@@ -1,5 +1,5 @@
 /* crypto/x509/x509_def.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,21 +63,21 @@
 #include "crypto.h"
 #include "x509.h"
 
-char *X509_get_default_private_dir()
+const char *X509_get_default_private_dir()
 	{ return(X509_PRIVATE_DIR); }
 	
-char *X509_get_default_cert_area()
+const char *X509_get_default_cert_area()
 	{ return(X509_CERT_AREA); }
 
-char *X509_get_default_cert_dir()
+const char *X509_get_default_cert_dir()
 	{ return(X509_CERT_DIR); }
 
-char *X509_get_default_cert_file()
+const char *X509_get_default_cert_file()
 	{ return(X509_CERT_FILE); }
 
-char *X509_get_default_cert_dir_env()
+const char *X509_get_default_cert_dir_env()
 	{ return(X509_CERT_DIR_EVP); }
 
-char *X509_get_default_cert_file_env()
+const char *X509_get_default_cert_file_env()
 	{ return(X509_CERT_FILE_EVP); }
 

@@ -1,5 +1,5 @@
 /* crypto/asn1/t_pkey.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -75,14 +75,14 @@
  */
 
 #ifndef NOPROTO
-static int print(BIO *fp,char *str,BIGNUM *num,
+static int print(BIO *fp,const char *str,BIGNUM *num,
 		unsigned char *buf,int off);
 #else
 static int print();
 #endif
 
 #ifndef NO_RSA
-#ifndef WIN16
+#ifndef NO_FP_API
 int RSA_print_fp(fp,x,off)
 FILE *fp;
 RSA *x;
@@ -108,7 +108,8 @@ BIO *bp;
 RSA *x;
 int off;
 	{
-	char str[128],*s;
+	char str[128];
+	const char *s;
 	unsigned char *m=NULL;
 	int i,ret=0;
 
@@ -153,7 +154,7 @@ err:
 #endif /* NO_RSA */
 
 #ifndef NO_DSA
-#ifndef WIN16
+#ifndef NO_FP_API
 int DSA_print_fp(fp,x,off)
 FILE *fp;
 DSA *x;
@@ -231,13 +232,14 @@ err:
 
 static int print(bp,number,num,buf,off)
 BIO *bp;
-char *number;
+const char *number;
 BIGNUM *num;
 unsigned char *buf;
 int off;
 	{
 	int n,i;
-	char str[128],*neg;
+	char str[128];
+	const char *neg;
 
 	if (num == NULL) return(1);
 	neg=(num->neg)?"-":"";
@@ -283,7 +285,7 @@ int off;
 	}
 
 #ifndef NO_DH
-#ifndef WIN16
+#ifndef NO_FP_API
 int DHparams_print_fp(fp,x)
 FILE *fp;
 DH *x;
@@ -329,15 +331,18 @@ DH *x;
 			(int)x->length) <= 0) goto err;
 		}
 	ret=1;
+	if (0)
+		{
 err:
+		DHerr(DH_F_DHPARAMS_PRINT,reason);
+		}
 	if (m != NULL) Free((char *)m);
-	DHerr(DH_F_DHPARAMS_PRINT,reason);
 	return(ret);
 	}
 #endif
 
 #ifndef NO_DSA
-#ifndef WIN16
+#ifndef NO_FP_API
 int DSAparams_print_fp(fp,x)
 FILE *fp;
 DSA *x;

@@ -1,5 +1,5 @@
 /* crypto/asn1/f_string.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -67,7 +67,7 @@ ASN1_STRING *a;
 int type;
 	{
 	int i,n=0;
-	static char *h="0123456789ABCDEF";
+	static const char *h="0123456789ABCDEF";
 	char buf[2];
 
 	if (a == NULL) return(0);

@@ -1,5 +1,5 @@
 /* crypto/evp/bio_md.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -185,7 +185,7 @@ long num;
 char *ptr;
 	{
 	EVP_MD_CTX *ctx,*dctx,**pctx;
-	EVP_MD **ppmd;
+	const EVP_MD **ppmd;
 	EVP_MD *md;
 	long ret=1;
 	BIO *dbio;
@@ -204,7 +204,7 @@ char *ptr;
 	case BIO_C_GET_MD:
 		if (b->init)
 			{
-			ppmd=(EVP_MD **)ptr;
+			ppmd=(const EVP_MD **)ptr;
 			*ppmd=ctx->digest;
 			}
 		else

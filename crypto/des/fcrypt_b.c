@@ -1,5 +1,5 @@
 /* crypto/des/fcrypt_b.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -85,7 +85,7 @@ DES_LONG Eswap1;
 	{
 	register DES_LONG l,r,t,u;
 #ifdef DES_PTR
-	register unsigned char *des_SP=(unsigned char *)des_SPtrans;
+	register const unsigned char *des_SP=(const unsigned char *)des_SPtrans;
 #endif
 	register DES_LONG *s;
 	register int j;
