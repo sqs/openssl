@@ -4,7 +4,6 @@
 
 $ssl=	"ssleay16";
 $crypto="libeay16";
-$RSAref="RSAref16";
 
 $o='\\';
 $cp='copy';
@@ -12,6 +11,10 @@ $rm='del';
 
 # C compiler stuff
 $cc='cl';
+
+$out_def="out16";
+$tmp_def="tmp16";
+$inc_def="inc16";
 
 if ($debug)
 	{
@@ -30,11 +33,12 @@ $lflags="$base_lflags /STACK:20000";
 
 if ($win16)
 	{
-	$cflags.=" -DWIN16";
+	$cflags.=" -DWINDOWS -DWIN16";
 	$app_cflag="/Gw /FPi87";
 	$lib_cflag="/Gw";
+	$lib_cflag.=" -D_WINDLL -D_DLL" if $shlib;
 	$lib_cflag.=" -DWIN16TTY" if !$shlib;
-	$lflags.=" /ALIGN:16";
+	$lflags.=" /ALIGN:256";
 	$ex_libs.="oldnames llibcewq libw";
 	}
 else
@@ -51,6 +55,8 @@ if ($shlib)
 	$libs="oldnames ldllcew libw";
 	$shlib_ex_obj="";
 #	$no_asm=1;
+	$out_def="out16dll";
+	$tmp_def="tmp16dll";
 	}
 else
 	{ $mlflags=''; }
@@ -77,8 +83,8 @@ $lfile='';
 $asm='ml /Cp /c /Cx';
 $afile='/Fo';
 
-$bn_mulw_obj='';
-$bn_mulw_src='';
+$bn_asm_obj='';
+$bn_asm_src='';
 $des_enc_obj='';
 $des_enc_src='';
 $bf_enc_obj='';
@@ -88,13 +94,13 @@ if (!$no_asm)
 	{
 	if ($asmbits == 32)
 		{
-		$bn_mulw_obj='crypto\bn\asm\x86w32.obj';
-		$bn_mulw_src='crypto\bn\asm\x86w32.asm';
+		$bn_asm_obj='crypto\bn\asm\x86w32.obj';
+		$bn_asm_src='crypto\bn\asm\x86w32.asm';
 		}
 	else
 		{
-		$bn_mulw_obj='crypto\bn\asm\x86w16.obj';
-		$bn_mulw_src='crypto\bn\asm\x86w16.asm';
+		$bn_asm_obj='crypto\bn\asm\x86w16.obj';
+		$bn_asm_src='crypto\bn\asm\x86w16.asm';
 		}
 	}
 
@@ -106,6 +112,7 @@ sub do_lib_rule
 	$taget =~ s/\//$o/g if $o ne '/';
 	($Name=$name) =~ tr/a-z/A-Z/;
 
+#	$target="\$(LIB_D)$o$target";
 	$ret.="$target: $objs\n";
 #	$ret.="\t\$(RM) \$(O_$Name)\n";
 
@@ -126,7 +133,7 @@ sub do_lib_rule
 		}
 	else
 		{
-		local($ex)=($target eq '$(O_SSL)')?'$(L_CRYPTO)':"";
+		local($ex)=($target =~ /O_SSL/)?'$(L_CRYPTO)':"";
 		$ex.=' winsock';
 		$ret.="\t\$(LINK) \$(MLFLAGS) @<<\n";
 		$ret.=$dll_names;
