@@ -1,5 +1,5 @@
-/* apps/ssleay.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* apps/openssl.c */
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -56,14 +56,13 @@
  * [including the GNU Public Licence.]
  */
 
-#define DEBUG
+#ifndef DEBUG
+#undef DEBUG
+#endif
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef WIN16
-#define APPS_WIN16
-#endif
 #include "bio.h"
 #include "crypto.h"
 #include "lhash.h"
@@ -78,19 +77,22 @@
 #include "s_apps.h"
 #include "err.h"
 
+/*
+#ifdef WINDOWS
+#include "bss_file.c"
+#endif
+*/
 
 #ifndef NOPROTO
 static unsigned long MS_CALLBACK hash(FUNCTION *a);
 static int MS_CALLBACK cmp(FUNCTION *a,FUNCTION *b);
 static LHASH *prog_init(void );
 static int do_cmd(LHASH *prog,int argc,char *argv[]);
-static void sig_stop(int i);
 #else
 static unsigned long MS_CALLBACK hash();
 static int MS_CALLBACK cmp();
 static LHASH *prog_init();
 static int do_cmd();
-static void sig_stop();
 #endif
 
 LHASH *config=NULL;
@@ -143,19 +145,21 @@ char *Argv[];
 
 	if (bio_err == NULL)
 		if ((bio_err=BIO_new(BIO_s_file())) != NULL)
-			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE);
+			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE|BIO_FP_TEXT);
 
 	CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
 
 	ERR_load_crypto_strings();
 
 	/* Lets load up our environment a little */
-	p=getenv("SSLEAY_CONF");
+	p=getenv("OPENSSL_CONF");
+	if (p == NULL)
+		p=getenv("SSLEAY_CONF");
 	if (p == NULL)
 		{
 		strcpy(config_name,X509_get_default_cert_area());
 		strcat(config_name,"/lib/");
-		strcat(config_name,SSLEAY_CONF);
+		strcat(config_name,OPENSSL_CONF);
 		p=config_name;
 		}
 
@@ -189,7 +193,7 @@ char *Argv[];
 		goto end;
 		}
 
-	/* ok, lets enter the old 'SSLeay>' mode */
+	/* ok, lets enter the old 'OpenSSL>' mode */
 	
 	for (;;)
 		{
@@ -202,7 +206,7 @@ char *Argv[];
 			p[0]='\0';
 			if (i++)
 				prompt=">";
-			else	prompt="SSLeay>";
+			else	prompt="OpenSSL> ";
 			fputs(prompt,stdout);
 			fflush(stdout);
 			fgets(p,n,stdin);
@@ -224,6 +228,7 @@ char *Argv[];
 			}
 		if (ret != 0)
 			BIO_printf(bio_err,"error in %s\n",argv[0]);
+		BIO_flush(bio_err);
 		}
 	BIO_printf(bio_err,"bad exit\n");
 	ret=1;
@@ -238,6 +243,7 @@ end:
 	ERR_remove_state(0);
 
 	EVP_cleanup();
+	ERR_free_strings();
 
 	CRYPTO_mem_leaks(bio_err);
 	if (bio_err != NULL)
@@ -274,10 +280,10 @@ char *argv[];
 		}
 	else
 		{
-		BIO_printf(bio_err,"'%s' is a bad command, valid commands are",
+		BIO_printf(bio_err,"openssl:Error: '%s' is an invalid command.\n",
 			argv[0]);
+		BIO_printf(bio_err, "\nStandard commands");
 		i=0;
-		fp=functions;
 		tp=0;
 		for (fp=functions; fp->name != NULL; fp++)
 			{
@@ -295,17 +301,17 @@ char *argv[];
 					{
 					i=1;
 					BIO_printf(bio_err,
-						"Message Digest commands - see the dgst command for more details\n");
+						"\nMessage Digest commands (see the `dgst' command for more details)\n");
 					}
 				else if (tp == FUNC_TYPE_CIPHER)
 					{
 					i=1;
-					BIO_printf(bio_err,"Cipher commands - see the enc command for more details\n");
+					BIO_printf(bio_err,"\nCipher commands (see the `enc' command for more details)\n");
 					}
 				}
 			BIO_printf(bio_err,"%-15s",fp->name);
 			}
-		BIO_printf(bio_err,"\nquit\n");
+		BIO_printf(bio_err,"\n\n");
 		ret=0;
 		}
 end:
