@@ -1,5 +1,5 @@
 /* crypto/evp/e_ecb_d.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -77,6 +77,11 @@ static EVP_CIPHER d_ecb_cipher=
 	8,8,0,
 	des_ecb_init_key,
 	des_ecb_cipher,
+	NULL,
+	sizeof(EVP_CIPHER_CTX)-sizeof((((EVP_CIPHER_CTX *)NULL)->c))+
+		sizeof((((EVP_CIPHER_CTX *)NULL)->c.des_ks)),
+	NULL,
+	NULL,
 	};
 
 EVP_CIPHER *EVP_des_ecb()
@@ -91,7 +96,7 @@ unsigned char *iv;
 int enc;
 	{
 	if (key != NULL)
-		des_set_key((des_cblock *)key,ctx->c.des_ecb.ks);
+		des_set_key(key,ctx->c.des_ks);
 	}
 
 static void des_ecb_cipher(ctx,out,in,inl)
@@ -106,8 +111,6 @@ unsigned int inl;
 	inl-=8;
 	for (i=0; i<=inl; i+=8)
 		{
-		des_ecb_encrypt(
-			(des_cblock *)&(in[i]),(des_cblock *)&(out[i]),
-			ctx->c.des_ecb.ks,ctx->encrypt);
+		des_ecb_encrypt(&(in[i]),&(out[i]),ctx->c.des_ks,ctx->encrypt);
 		}
 	}

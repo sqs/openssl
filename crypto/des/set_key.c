@@ -1,5 +1,5 @@
 /* crypto/des/set_key.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -68,7 +68,7 @@
 #include "sk.h"
 
 #ifndef NOPROTO
-static int check_parity(des_cblock (*key));
+static int check_parity(const des_cblock key);
 #else
 static int check_parity();
 #endif
@@ -76,22 +76,22 @@ static int check_parity();
 int des_check_key=0;
 
 void des_set_odd_parity(key)
-des_cblock (*key);
+des_cblock key;
 	{
 	int i;
 
 	for (i=0; i<DES_KEY_SZ; i++)
-		(*key)[i]=odd_parity[(*key)[i]];
+		key[i]=odd_parity[key[i]];
 	}
 
 static int check_parity(key)
-des_cblock (*key);
+const des_cblock key;
 	{
 	int i;
 
 	for (i=0; i<DES_KEY_SZ; i++)
 		{
-		if ((*key)[i] != odd_parity[(*key)[i]])
+		if (key[i] != odd_parity[key[i]])
 			return(0);
 		}
 	return(1);
@@ -111,8 +111,8 @@ static des_cblock weak_keys[NUM_WEAK_KEY]={
 	/* weak keys */
 	{0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01},
 	{0xFE,0xFE,0xFE,0xFE,0xFE,0xFE,0xFE,0xFE},
-	{0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F},
-	{0xE0,0xE0,0xE0,0xE0,0xE0,0xE0,0xE0,0xE0},
+	{0x1F,0x1F,0x1F,0x1F,0x0E,0x0E,0x0E,0x0E},
+	{0xE0,0xE0,0xE0,0xE0,0xF1,0xF1,0xF1,0xF1},
 	/* semi-weak keys */
 	{0x01,0xFE,0x01,0xFE,0x01,0xFE,0x01,0xFE},
 	{0xFE,0x01,0xFE,0x01,0xFE,0x01,0xFE,0x01},
@@ -128,7 +128,7 @@ static des_cblock weak_keys[NUM_WEAK_KEY]={
 	{0xFE,0xE0,0xFE,0xE0,0xFE,0xF1,0xFE,0xF1}};
 
 int des_is_weak_key(key)
-des_cblock (*key);
+const des_cblock key;
 	{
 	int i;
 
@@ -158,7 +158,7 @@ des_cblock (*key);
  * return -2 if illegal weak key.
  */
 int des_set_key(key, schedule)
-des_cblock (*key);
+const des_cblock key;
 des_key_schedule schedule;
 	{
 	static int shifts2[16]={0,0,1,1,1,1,1,1,0,1,1,1,1,1,1,0};
@@ -239,7 +239,7 @@ des_key_schedule schedule;
 	}
 
 int des_key_sched(key, schedule)
-des_cblock (*key);
+const des_cblock key;
 des_key_schedule schedule;
 	{
 	return(des_set_key(key,schedule));

@@ -1,5 +1,5 @@
 /* crypto/evp/e_ecb_3d.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -80,6 +80,11 @@ static EVP_CIPHER d_ede_cipher2=
 	8,16,0,
 	des_ede_init_key,
 	des_ede_cipher,
+	NULL,
+	sizeof(EVP_CIPHER_CTX)-sizeof((((EVP_CIPHER_CTX *)NULL)->c))+
+		sizeof((((EVP_CIPHER_CTX *)NULL)->c.des_ede)),
+	NULL,
+	NULL,
 	};
 
 static EVP_CIPHER d_ede3_cipher3=
@@ -88,6 +93,10 @@ static EVP_CIPHER d_ede3_cipher3=
 	8,24,0,
 	des_ede3_init_key,
 	des_ede_cipher,
+	NULL,
+	sizeof(EVP_CIPHER_CTX)-sizeof((((EVP_CIPHER_CTX *)NULL)->c))+
+		sizeof((((EVP_CIPHER_CTX *)NULL)->c.des_ede)),
+	NULL,
 	};
 
 EVP_CIPHER *EVP_des_ede()
@@ -108,8 +117,8 @@ int enc;
 	{
 	if (key != NULL)
 		{
-		des_set_key((des_cblock *)key,ctx->c.des_ede.ks1);
-		des_set_key((des_cblock *)&(key[8]),ctx->c.des_ede.ks2);
+		des_set_key(key,ctx->c.des_ede.ks1);
+		des_set_key(&(key[8]),ctx->c.des_ede.ks2);
 		memcpy( (char *)ctx->c.des_ede.ks3,
 			(char *)ctx->c.des_ede.ks1,
 			sizeof(ctx->c.des_ede.ks1));
@@ -124,9 +133,9 @@ int enc;
 	{
 	if (key != NULL)
 		{
-		des_set_key((des_cblock *)key,ctx->c.des_ede.ks1);
-		des_set_key((des_cblock *)&(key[8]),ctx->c.des_ede.ks2);
-		des_set_key((des_cblock *)&(key[16]),ctx->c.des_ede.ks3);
+		des_set_key(key,ctx->c.des_ede.ks1);
+		des_set_key(&(key[8]),ctx->c.des_ede.ks2);
+		des_set_key(&(key[16]),ctx->c.des_ede.ks3);
 		}
 	}
 
@@ -142,8 +151,7 @@ unsigned int inl;
 	inl-=8;
 	for (i=0; i<=inl; i+=8)
 		{
-		des_ecb3_encrypt(
-			(des_cblock *)&(in[i]),(des_cblock *)&(out[i]),
+		des_ecb3_encrypt(&(in[i]),&(out[i]),
 			ctx->c.des_ede.ks1,
 			ctx->c.des_ede.ks2,
 			ctx->c.des_ede.ks3,

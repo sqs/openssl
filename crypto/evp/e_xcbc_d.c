@@ -1,5 +1,5 @@
 /* crypto/evp/e_xcbc_d.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -77,6 +77,11 @@ static EVP_CIPHER d_xcbc_cipher=
 	8,24,8,
 	desx_cbc_init_key,
 	desx_cbc_cipher,
+	NULL,
+	sizeof(EVP_CIPHER_CTX)-sizeof((((EVP_CIPHER_CTX *)NULL)->c))+
+		sizeof((((EVP_CIPHER_CTX *)NULL)->c.desx_cbc)),
+	EVP_CIPHER_set_asn1_iv,
+	EVP_CIPHER_get_asn1_iv,
 	};
 
 EVP_CIPHER *EVP_desx_cbc()
@@ -91,11 +96,11 @@ unsigned char *iv;
 int enc;
 	{
 	if (iv != NULL)
-		memcpy(&(ctx->c.desx_cbc.oiv[0]),iv,8);
-	memcpy(&(ctx->c.desx_cbc.iv[0]),&(ctx->c.desx_cbc.oiv[0]),8);
+		memcpy(&(ctx->oiv[0]),iv,8);
+	memcpy(&(ctx->iv[0]),&(ctx->oiv[0]),8);
 	if (key != NULL)
 		{
-		des_set_key((des_cblock *)key,ctx->c.desx_cbc.ks);
+		des_set_key(key,ctx->c.desx_cbc.ks);
 		memcpy(&(ctx->c.desx_cbc.inw[0]),&(key[8]),8);
 		memcpy(&(ctx->c.desx_cbc.outw[0]),&(key[16]),8);
 		}
@@ -107,11 +112,9 @@ unsigned char *out;
 unsigned char *in;
 unsigned int inl;
 	{
-	des_xcbc_encrypt(
-		(des_cblock *)in,(des_cblock *)out,
-		(long)inl, ctx->c.desx_cbc.ks,
-		(des_cblock *)&(ctx->c.desx_cbc.iv[0]),
-		(des_cblock *)&(ctx->c.desx_cbc.inw[0]),
-		(des_cblock *)&(ctx->c.desx_cbc.outw[0]),
+	des_xcbc_encrypt(in,out,inl,ctx->c.desx_cbc.ks,
+		&(ctx->iv[0]),
+		&(ctx->c.desx_cbc.inw[0]),
+		&(ctx->c.desx_cbc.outw[0]),
 		ctx->encrypt);
 	}

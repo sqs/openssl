@@ -1,5 +1,5 @@
 /* crypto/des/ofb64ede.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,11 +63,11 @@
  * 64bit block we have used is contained in *num;
  */
 void des_ede3_ofb64_encrypt(in, out, length, k1,k2,k3, ivec, num)
-register unsigned char *in;
+register const unsigned char *in;
 register unsigned char *out;
 long length;
 des_key_schedule k1,k2,k3;
-des_cblock (*ivec);
+des_cblock ivec;
 int *num;
 	{
 	register DES_LONG v0,v1;
@@ -79,7 +79,7 @@ int *num;
 	unsigned char *iv;
 	int save=0;
 
-	iv=(unsigned char *)ivec;
+	iv=ivec;
 	c2l(iv,v0);
 	c2l(iv,v1);
 	ti[0]=v0;
@@ -91,9 +91,9 @@ int *num;
 		{
 		if (n == 0)
 			{
-			ti[0]=v0;
-			ti[1]=v1;
-			des_encrypt3((DES_LONG *)ti,k1,k2,k3);
+			/* ti[0]=v0; */
+			/* ti[1]=v1; */
+			des_encrypt3(ti,k1,k2,k3);
 			v0=ti[0];
 			v1=ti[1];
 
@@ -109,7 +109,7 @@ int *num;
 		{
 /*		v0=ti[0];
 		v1=ti[1];*/
-		iv=(unsigned char *)ivec;
+		iv=ivec;
 		l2c(v0,iv);
 		l2c(v1,iv);
 		}

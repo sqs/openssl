@@ -1,5 +1,5 @@
 /* crypto/des/enc_read.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -69,7 +69,7 @@ int fd;
 char *buf;
 int len;
 des_key_schedule sched;
-des_cblock (*iv);
+des_cblock iv;
 	{
 	/* data to be unencrypted */
 	int net_num=0;
@@ -132,7 +132,9 @@ des_cblock (*iv);
 	while (net_num < HDRSIZE) 
 		{
 		i=read(fd,&(net[net_num]),(unsigned int)HDRSIZE-net_num);
+#ifdef EINTR
 		if ((i == -1) && (errno == EINTR)) continue;
+#endif
 		if (i <= 0) return(0);
 		net_num+=i;
 		}
@@ -152,7 +154,9 @@ des_cblock (*iv);
 	while (net_num < rnum)
 		{
 		i=read(fd,&(net[net_num]),(unsigned int)rnum-net_num);
+#ifdef EINTR
 		if ((i == -1) && (errno == EINTR)) continue;
+#endif
 		if (i <= 0) return(0);
 		net_num+=i;
 		}
@@ -161,11 +165,9 @@ des_cblock (*iv);
 	if (len < num)
 		{
 		if (des_rw_mode & DES_PCBC_MODE)
-			des_pcbc_encrypt((des_cblock *)net,(des_cblock *)unnet,
-				num,sched,iv,DES_DECRYPT);
+			des_pcbc_encrypt(net,unnet,num,sched,iv,DES_DECRYPT);
 		else
-			des_cbc_encrypt((des_cblock *)net,(des_cblock *)unnet,
-				num,sched,iv,DES_DECRYPT);
+			des_cbc_encrypt(net,unnet,num,sched,iv,DES_DECRYPT);
 		memcpy(buf,unnet,(unsigned int)len);
 		unnet_start=len;
 		unnet_left=(int)num-len;
@@ -185,13 +187,11 @@ des_cblock (*iv);
 			{
 
 			if (des_rw_mode & DES_PCBC_MODE)
-				des_pcbc_encrypt((des_cblock *)net,
-					(des_cblock *)tmpbuf,
-					num,sched,iv,DES_DECRYPT);
+				des_pcbc_encrypt(net,tmpbuf,num,sched,iv,
+						 DES_DECRYPT);
 			else
-				des_cbc_encrypt((des_cblock *)net,
-					(des_cblock *)tmpbuf,
-					num,sched,iv,DES_DECRYPT);
+				des_cbc_encrypt(net,tmpbuf,num,sched,iv,
+						DES_DECRYPT);
 
 			/* eay 26/08/92 fix a bug that returned more
 			 * bytes than you asked for (returned len bytes :-( */
@@ -200,13 +200,11 @@ des_cblock (*iv);
 		else
 			{
 			if (des_rw_mode & DES_PCBC_MODE)
-				des_pcbc_encrypt((des_cblock *)net,
-					(des_cblock *)buf,num,sched,iv,
-					DES_DECRYPT);
+				des_pcbc_encrypt(net,buf,num,sched,iv,
+						 DES_DECRYPT);
 			else
-				des_cbc_encrypt((des_cblock *)net,
-					(des_cblock *)buf,num,sched,iv,
-					DES_DECRYPT);
+				des_cbc_encrypt(net,buf,num,sched,iv,
+						DES_DECRYPT);
 			}
 		}
 	return((int)num);

@@ -55,21 +55,21 @@ static unsigned const char cov_2char[64]={
 void fcrypt_body(DES_LONG *out,des_key_schedule ks,
 	DES_LONG Eswap0, DES_LONG Eswap1);
 
-#ifdef PERL5
+#if defined(PERL5) || defined(__FreeBSD__)
 char *des_crypt(const char *buf,const char *salt);
 #else
 char *crypt(const char *buf,const char *salt);
 #endif
 #else
 void fcrypt_body();
-#ifdef PERL5
+#if defined(PERL5) || defined(__FreeBSD__)
 char *des_crypt();
 #else
 char *crypt();
 #endif
 #endif
 
-#ifdef PERL5
+#if defined(PERL5) || defined(__FreeBSD__)
 char *des_crypt(buf,salt)
 #else
 char *crypt(buf,salt)
@@ -123,7 +123,7 @@ r=(r+7)/8;
 	for (; i<8; i++)
 		key[i]=0;
 
-	des_set_key((des_cblock *)(key),ks);
+	des_set_key(key,ks);
 	fcrypt_body(&(out[0]),ks,Eswap0,Eswap1);
 
 	ll=out[0]; l2c(ll,b);

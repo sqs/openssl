@@ -1,5 +1,5 @@
 /* crypto/des/pcbc_enc.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -59,11 +59,11 @@
 #include "des_locl.h"
 
 void des_pcbc_encrypt(input, output, length, schedule, ivec, enc)
-des_cblock (*input);
-des_cblock (*output);
+const unsigned char *input;
+unsigned char *output;
 long length;
 des_key_schedule schedule;
-des_cblock (*ivec);
+des_cblock ivec;
 int enc;
 	{
 	register DES_LONG sin0,sin1,xor0,xor1,tout0,tout1;

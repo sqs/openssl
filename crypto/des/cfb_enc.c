@@ -1,5 +1,5 @@
 /* crypto/des/cfb_enc.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -65,12 +65,12 @@
  * byte.
  */
 void des_cfb_encrypt(in, out, numbits, length, schedule, ivec, enc)
-unsigned char *in;
+const unsigned char *in;
 unsigned char *out;
 int numbits;
 long length;
 des_key_schedule schedule;
-des_cblock (*ivec);
+des_cblock ivec;
 int enc;
 	{
 	register DES_LONG d0,d1,v0,v1,n=(numbits+7)/8;
@@ -93,10 +93,10 @@ int enc;
 		if (num == 32)
 			mask0=0xffffffffL;
 		else	mask0=(1L<<num)-1;
-		mask1=0x00000000;
+		mask1=0x00000000L;
 		}
 
-	iv=(unsigned char *)ivec;
+	iv=ivec;
 	c2l(iv,v0);
 	c2l(iv,v1);
 	if (enc)
@@ -163,7 +163,7 @@ int enc;
 			out+=n;
 			}
 		}
-	iv=(unsigned char *)ivec;
+	iv=ivec;
 	l2c(v0,iv);
 	l2c(v1,iv);
 	v0=v1=d0=d1=ti[0]=ti[1]=0;
