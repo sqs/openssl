@@ -1,4 +1,5 @@
-#include "p5SSLeay.h"
+
+#include "openssl.h"
 
 static int p5_bio_ex_bio_ptr=0;
 static int p5_bio_ex_bio_callback=0;
@@ -25,7 +26,7 @@ int ret;
 		SAVETMPS;
 
 		PUSHMARK(sp);
-		XPUSHs(me);
+		XPUSHs(sv_2mortal(newSViv(me)));
 		XPUSHs(sv_2mortal(newSViv(state)));
 		XPUSHs(sv_2mortal(newSViv(cmd)));
 		if ((state == BIO_CB_READ) || (state == BIO_CB_WRITE))
@@ -60,7 +61,8 @@ int ret;
 int boot_bio()
 	{
 	p5_bio_ex_bio_ptr=
-		BIO_get_ex_new_index(0,"SSLeay::BIO",ex_new,NULL,ex_cleanup);
+		BIO_get_ex_new_index(0,"OpenSSL::BIO",ex_new,NULL,
+			ex_cleanup);
 	p5_bio_ex_bio_callback=	
 		BIO_get_ex_new_index(0,"bio_callback",NULL,NULL,
 			ex_cleanup);
@@ -70,7 +72,7 @@ int boot_bio()
 	return(1);
 	}
 
-MODULE =  SSLeay::BIO	PACKAGE = SSLeay::BIO PREFIX = p5_BIO_
+MODULE =  OpenSSL::BIO	PACKAGE = OpenSSL::BIO PREFIX = p5_BIO_
 
 VERSIONCHECK: DISABLE
 
@@ -88,8 +90,8 @@ p5_BIO_new_buffer_ssl_connect(...)
 		else
 			arg=NULL;
 
-		if ((arg == NULL) || !(sv_derived_from(arg,"SSLeay::SSL::CTX")))
-			croak("Usage: SSLeay::BIO::new_buffer_ssl_connect(SSL_CTX)");
+		if ((arg == NULL) || !(sv_derived_from(arg,"OpenSSL::SSL::CTX")))
+			croak("Usage: OpenSSL::BIO::new_buffer_ssl_connect(SSL_CTX)");
 		else
 			{
 			IV tmp=SvIV((SV *)SvRV(arg));
@@ -97,9 +99,8 @@ p5_BIO_new_buffer_ssl_connect(...)
 			}
 		EXTEND(sp,1);
 		bio=BIO_new_buffer_ssl_connect(ctx);
-		arg=new_ref("SSLeay::BIO",(char *)bio,0);
+		arg=(SV *)BIO_get_ex_data(bio,p5_bio_ex_bio_ptr);
 		PUSHs(arg);
-		BIO_set_ex_data(bio,p5_bio_ex_bio_ptr,(char *)arg);
 
 void
 p5_BIO_new_ssl_connect(...)
@@ -115,8 +116,8 @@ p5_BIO_new_ssl_connect(...)
 		else
 			arg=NULL;
 
-		if ((arg == NULL) || !(sv_derived_from(arg,"SSLeay::SSL::CTX")))
-			croak("Usage: SSLeay::BIO::new_ssl_connect(SSL_CTX)");
+		if ((arg == NULL) || !(sv_derived_from(arg,"OpenSSL::SSL::CTX")))
+			croak("Usage: OpenSSL::BIO::new_ssl_connect(SSL_CTX)");
 		else
 			{
 			IV tmp=SvIV((SV *)SvRV(arg));
@@ -124,9 +125,8 @@ p5_BIO_new_ssl_connect(...)
 			}
 		EXTEND(sp,1);
 		bio=BIO_new_ssl_connect(ctx);
-		arg=new_ref("SSLeay::BIO",(char *)bio,0);
+		arg=(SV *)BIO_get_ex_data(bio,p5_bio_ex_bio_ptr);
 		PUSHs(arg);
-		BIO_set_ex_data(bio,p5_bio_ex_bio_ptr,(char *)arg);
 
 void
 p5_BIO_new(...)
@@ -141,7 +141,7 @@ p5_BIO_new(...)
 		else if ((items == 2) && SvPOK(ST(1)))
 			type=SvPV(ST(1),na);
 		else
-			croak("Usage: SSLeay::BIO::new(type)");
+			croak("Usage: OpenSSL::BIO::new(type)");
 
 		EXTEND(sp,1);
 		if (strcmp(type,"connect") == 0)
@@ -154,16 +154,15 @@ p5_BIO_new(...)
 			bio=BIO_new(BIO_f_buffer());
 		else
 			croak("unknown BIO type");
-		arg=new_ref("SSLeay::BIO",(char *)bio,0);
+		arg=(SV *)BIO_get_ex_data(bio,p5_bio_ex_bio_ptr);
 		PUSHs(arg);
-		BIO_set_ex_data(bio,p5_bio_ex_bio_ptr,(char *)arg);
 
 int
 p5_BIO_hostname(bio,name)
 	BIO *bio;
 	char *name;
 	CODE:
-		RETVAL=BIO_set_hostname(bio,name);
+		RETVAL=BIO_set_conn_hostname(bio,name);
 	OUTPUT:
 		RETVAL
 
@@ -191,7 +190,7 @@ p5_BIO_push(b,bio)
 	CODE:
 		/* This reference will be reduced when the reference is
 		 * let go, and then when the BIO_free_all() is called
-		 * inside the SSLeay library by the BIO with this
+		 * inside the OpenSSL library by the BIO with this
 		 * pushed into */
 		bio->references++;
 		RETVAL=BIO_push(b,bio);
@@ -212,24 +211,26 @@ p5_BIO_pop(b)
 			/* This BIO will either be one created in the
 			 * perl library, in which case it will have a perl
 			 * SV, otherwise it will have been created internally,
-			 * inside SSLeay.  For the 'pushed in', it needs
+			 * inside OpenSSL.  For the 'pushed in', it needs
 			 * the reference count decememted. */
 			arg=(SV *)BIO_get_ex_data(bio,p5_bio_ex_bio_ptr);
 			if (arg == NULL)
 				{
-				arg=new_ref("SSLeay::BIO",(char *)bio,0);
-				PUSHs(arg);
+				arg=new_ref("OpenSSL::BIO",(char *)bio,0);
 				BIO_set_ex_data(bio,p5_bio_ex_bio_ptr,(char *)arg);
+				PUSHs(arg);
 				}
 			else
 				{
 				/* it was pushed in */
 				SvREFCNT_inc(arg);
 				PUSHs(arg);
+#if 0 		/* This does not need to be done. */
 				if (bio->references < 1)
 					abort();
 				/* decrement the reference count */
 				BIO_free(bio);
+#endif
 				}
 			}
 
@@ -253,7 +254,7 @@ p5_BIO_sysread(bio,in,num, ...)
 			if (offset < 0)
 				{
 				if (-offset > olen)
-					croad("Offset outside string");
+					croak("Offset outside string");
 				offset+=olen;
 				}
 			}
@@ -355,9 +356,10 @@ p5_BIO_next_bio(b)
 			arg=(SV *)BIO_get_ex_data(bio,p5_bio_ex_bio_ptr);
 			if (arg == NULL)
 				{
-				arg=new_ref("SSLeay::BIO",(char *)bio,0);
-				PUSHs(arg);
+				arg=new_ref("OpenSSL::BIO",(char *)bio,0);
 				BIO_set_ex_data(bio,p5_bio_ex_bio_ptr,(char *)arg);
+				bio->references++;
+				PUSHs(arg);
 				}
 			else
 				{
@@ -387,7 +389,7 @@ p5_BIO_set_callback(bio,cb,...)
 		SV *arg2=NULL;
 	CODE:
 		if (items > 3)
-			croak("Usage: SSLeay::BIO::set_callback(bio,callback[,arg]");
+			croak("Usage: OpenSSL::BIO::set_callback(bio,callback[,arg]");
 		if (items == 3)
 			{
 			arg2=sv_mortalcopy(ST(2));
@@ -398,6 +400,7 @@ p5_BIO_set_callback(bio,cb,...)
 		arg=sv_mortalcopy(ST(1));
 		SvREFCNT_inc(arg);
 		BIO_set_ex_data(bio,p5_bio_ex_bio_callback,(char *)arg);
+		printf("%08lx < bio_ptr\n",BIO_get_ex_data(bio,p5_bio_ex_bio_ptr));
 		BIO_set_callback(bio,p5_bio_callback);
 
 void
