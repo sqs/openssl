@@ -1,5 +1,5 @@
 /* ssl/s2_enc.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -59,9 +59,6 @@
 #include <stdio.h>
 #include "ssl_locl.h"
 
-#define RS	0
-#define WS	1
-
 int ssl2_enc_init(s, client)
 SSL *s;
 int client;
@@ -72,7 +69,7 @@ int client;
 	EVP_MD *md;
 	int num;
 
-	if (!ssl_cipher_get_evp(s->session->cipher,&c,&md))
+	if (!ssl_cipher_get_evp(s->session,&c,&md,NULL))
 		{
 		ssl2_return_error(s,SSL2_PE_NO_CIPHER);
 		SSLerr(SSL_F_SSL2_ENC_INIT,SSL_R_PROBLEMS_MAPPING_CIPHER_FUNCTIONS);
@@ -93,6 +90,9 @@ int client;
 
 	rs= s->enc_read_ctx;
 	ws= s->enc_write_ctx;
+
+	EVP_CIPHER_CTX_init(rs);
+	EVP_CIPHER_CTX_init(ws);
 
 	num=c->key_len;
 	s->s2->key_material_length=num*2;

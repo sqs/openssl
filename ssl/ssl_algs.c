@@ -1,5 +1,5 @@
 /* ssl/ssl_algs.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -61,7 +61,7 @@
 #include "lhash.h"
 #include "ssl_locl.h"
 
-void SSLeay_add_ssl_algorithms()
+int SSL_library_init()
 	{
 #ifndef NO_DES
 	EVP_add_cipher(EVP_des_cbc());
@@ -82,9 +82,12 @@ void SSLeay_add_ssl_algorithms()
 #endif
 #ifndef NO_MD5
 	EVP_add_digest(EVP_md5());
+	EVP_add_digest_alias(SN_md5,"ssl2-md5");
+	EVP_add_digest_alias(SN_md5,"ssl3-md5");
 #endif
 #ifndef NO_SHA1
 	EVP_add_digest(EVP_sha1()); /* RSA with sha1 */
+	EVP_add_digest_alias(SN_sha1,"ssl3-sha1");
 #endif
 #if !defined(NO_SHA1) && !defined(NO_DSA)
 	EVP_add_digest(EVP_dss1()); /* DSA with sha1 */
@@ -95,5 +98,6 @@ void SSLeay_add_ssl_algorithms()
 	EVP_add_digest(EVP_sha());
 	EVP_add_digest(EVP_dss());
 #endif
+	return(1);
 	}
 

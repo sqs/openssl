@@ -60,6 +60,7 @@
 #include "ssl.h"
 
 /* BEGIN ERROR CODES */
+#ifndef NO_ERR
 static ERR_STRING_DATA SSL_str_functs[]=
 	{
 {ERR_PACK(0,SSL_F_CLIENT_CERTIFICATE,0),	"CLIENT_CERTIFICATE"},
@@ -126,7 +127,10 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_PACK(0,SSL_F_SSL_BYTES_TO_CIPHER_LIST,0),	"SSL_BYTES_TO_CIPHER_LIST"},
 {ERR_PACK(0,SSL_F_SSL_CERT_NEW,0),	"SSL_CERT_NEW"},
 {ERR_PACK(0,SSL_F_SSL_CHECK_PRIVATE_KEY,0),	"SSL_check_private_key"},
+{ERR_PACK(0,SSL_F_SSL_CLEAR,0),	"SSL_clear"},
+{ERR_PACK(0,SSL_F_SSL_COMP_ADD_COMPRESSION_METHOD,0),	"SSL_COMP_add_compression_method"},
 {ERR_PACK(0,SSL_F_SSL_CREATE_CIPHER_LIST,0),	"SSL_CREATE_CIPHER_LIST"},
+{ERR_PACK(0,SSL_F_SSL_CTX_ADD_COMPRESSION,0),	"SSL_CTX_ADD_COMPRESSION"},
 {ERR_PACK(0,SSL_F_SSL_CTX_CHECK_PRIVATE_KEY,0),	"SSL_CTX_check_private_key"},
 {ERR_PACK(0,SSL_F_SSL_CTX_NEW,0),	"SSL_CTX_new"},
 {ERR_PACK(0,SSL_F_SSL_CTX_SET_SSL_VERSION,0),	"SSL_CTX_set_ssl_version"},
@@ -143,12 +147,14 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_PACK(0,SSL_F_SSL_GET_NEW_SESSION,0),	"SSL_GET_NEW_SESSION"},
 {ERR_PACK(0,SSL_F_SSL_GET_SERVER_SEND_CERT,0),	"SSL_GET_SERVER_SEND_CERT"},
 {ERR_PACK(0,SSL_F_SSL_GET_SIGN_PKEY,0),	"SSL_GET_SIGN_PKEY"},
+{ERR_PACK(0,SSL_F_SSL_INIT_WBIO_BUFFER,0),	"SSL_INIT_WBIO_BUFFER"},
 {ERR_PACK(0,SSL_F_SSL_LOAD_CLIENT_CA_FILE,0),	"SSL_load_client_CA_file"},
 {ERR_PACK(0,SSL_F_SSL_NEW,0),	"SSL_new"},
 {ERR_PACK(0,SSL_F_SSL_RSA_PRIVATE_DECRYPT,0),	"SSL_RSA_PRIVATE_DECRYPT"},
 {ERR_PACK(0,SSL_F_SSL_RSA_PUBLIC_ENCRYPT,0),	"SSL_RSA_PUBLIC_ENCRYPT"},
 {ERR_PACK(0,SSL_F_SSL_SESSION_NEW,0),	"SSL_SESSION_new"},
 {ERR_PACK(0,SSL_F_SSL_SESSION_PRINT_FP,0),	"SSL_SESSION_print_fp"},
+{ERR_PACK(0,SSL_F_SSL_SET_CERT,0),	"SSL_SET_CERT"},
 {ERR_PACK(0,SSL_F_SSL_SET_FD,0),	"SSL_set_fd"},
 {ERR_PACK(0,SSL_F_SSL_SET_PKEY,0),	"SSL_SET_PKEY"},
 {ERR_PACK(0,SSL_F_SSL_SET_RFD,0),	"SSL_set_rfd"},
@@ -164,7 +170,11 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_PACK(0,SSL_F_SSL_USE_RSAPRIVATEKEY,0),	"SSL_use_RSAPrivateKey"},
 {ERR_PACK(0,SSL_F_SSL_USE_RSAPRIVATEKEY_ASN1,0),	"SSL_use_RSAPrivateKey_ASN1"},
 {ERR_PACK(0,SSL_F_SSL_USE_RSAPRIVATEKEY_FILE,0),	"SSL_use_RSAPrivateKey_file"},
+{ERR_PACK(0,SSL_F_SSL_VERIFY_CERT_CHAIN,0),	"SSL_VERIFY_CERT_CHAIN"},
 {ERR_PACK(0,SSL_F_SSL_WRITE,0),	"SSL_write"},
+{ERR_PACK(0,SSL_F_TLS1_CHANGE_CIPHER_STATE,0),	"TLS1_CHANGE_CIPHER_STATE"},
+{ERR_PACK(0,SSL_F_TLS1_ENC,0),	"TLS1_ENC"},
+{ERR_PACK(0,SSL_F_TLS1_SETUP_KEY_BLOCK,0),	"TLS1_SETUP_KEY_BLOCK"},
 {ERR_PACK(0,SSL_F_WRITE_PENDING,0),	"WRITE_PENDING"},
 {0,NULL},
 	};
@@ -187,6 +197,7 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_BAD_MAC_DECODE                    ,"bad mac decode"},
 {SSL_R_BAD_MESSAGE_TYPE                  ,"bad message type"},
 {SSL_R_BAD_PACKET_LENGTH                 ,"bad packet length"},
+{SSL_R_BAD_PROTOCOL_VERSION_NUMBER       ,"bad protocol version number"},
 {SSL_R_BAD_RESPONSE_ARGUMENT             ,"bad response argument"},
 {SSL_R_BAD_RSA_DECRYPT                   ,"bad rsa decrypt"},
 {SSL_R_BAD_RSA_ENCRYPT                   ,"bad rsa encrypt"},
@@ -212,9 +223,12 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_CIPHER_TABLE_SRC_ERROR            ,"cipher table src error"},
 {SSL_R_COMPRESSED_LENGTH_TOO_LONG        ,"compressed length too long"},
 {SSL_R_COMPRESSION_FAILURE               ,"compression failure"},
+{SSL_R_COMPRESSION_LIBRARY_ERROR         ,"compression library error"},
 {SSL_R_CONNECTION_ID_IS_DIFFERENT        ,"connection id is different"},
+{SSL_R_CONNECTION_TYPE_NOT_SET           ,"connection type not set"},
 {SSL_R_DATA_BETWEEN_CCS_AND_FINISHED     ,"data between ccs and finished"},
 {SSL_R_DATA_LENGTH_TOO_LONG              ,"data length too long"},
+{SSL_R_DECRYPTION_FAILED                 ,"decryption failed"},
 {SSL_R_DH_PUBLIC_VALUE_LENGTH_IS_WRONG   ,"dh public value length is wrong"},
 {SSL_R_DIGEST_CHECK_FAILED               ,"digest check failed"},
 {SSL_R_ENCRYPTED_LENGTH_TOO_LONG         ,"encrypted length too long"},
@@ -222,6 +236,8 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_EXCESSIVE_MESSAGE_SIZE            ,"excessive message size"},
 {SSL_R_EXTRA_DATA_IN_MESSAGE             ,"extra data in message"},
 {SSL_R_GOT_A_FIN_BEFORE_A_CCS            ,"got a fin before a ccs"},
+{SSL_R_HTTPS_PROXY_REQUEST               ,"https proxy request"},
+{SSL_R_HTTP_REQUEST                      ,"http request"},
 {SSL_R_INTERNAL_ERROR                    ,"internal error"},
 {SSL_R_INVALID_CHALLENGE_LENGTH          ,"invalid challenge length"},
 {SSL_R_LENGTH_MISMATCH                   ,"length mismatch"},
@@ -241,7 +257,7 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_MISSING_TMP_RSA_PKEY              ,"missing tmp rsa pkey"},
 {SSL_R_MISSING_VERIFY_MESSAGE            ,"missing verify message"},
 {SSL_R_NON_SSLV2_INITIAL_PACKET          ,"non sslv2 initial packet"},
-{SSL_R_NO_CERTIFICATES_PASSED            ,"no certificates passed"},
+{SSL_R_NO_CERTIFICATES_RETURNED          ,"no certificates returned"},
 {SSL_R_NO_CERTIFICATE_ASSIGNED           ,"no certificate assigned"},
 {SSL_R_NO_CERTIFICATE_RETURNED           ,"no certificate returned"},
 {SSL_R_NO_CERTIFICATE_SET                ,"no certificate set"},
@@ -253,10 +269,13 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_NO_CIPHER_MATCH                   ,"no cipher match"},
 {SSL_R_NO_CLIENT_CERT_RECEIVED           ,"no client cert received"},
 {SSL_R_NO_COMPRESSION_SPECIFIED          ,"no compression specified"},
+{SSL_R_NO_METHOD_SPECIFIED               ,"no method specified"},
 {SSL_R_NO_PRIVATEKEY                     ,"no privatekey"},
 {SSL_R_NO_PRIVATE_KEY_ASSIGNED           ,"no private key assigned"},
+{SSL_R_NO_PROTOCOLS_AVAILABLE            ,"no protocols available"},
 {SSL_R_NO_PUBLICKEY                      ,"no publickey"},
 {SSL_R_NO_SHARED_CIPHER                  ,"no shared cipher"},
+{SSL_R_NO_VERIFY_CALLBACK                ,"no verify callback"},
 {SSL_R_NULL_SSL_CTX                      ,"null ssl ctx"},
 {SSL_R_NULL_SSL_METHOD_PASSED            ,"null ssl method passed"},
 {SSL_R_OLD_SESSION_CIPHER_NOT_RETURNED   ,"old session cipher not returned"},
@@ -283,6 +302,7 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_REUSE_CIPHER_LIST_NOT_ZERO        ,"reuse cipher list not zero"},
 {SSL_R_SHORT_READ                        ,"short read"},
 {SSL_R_SIGNATURE_FOR_NON_SIGNING_CERTIFICATE,"signature for non signing certificate"},
+{SSL_R_SSL23_DOING_SESSION_ID_REUSE      ,"ssl23 doing session id reuse"},
 {SSL_R_SSL3_SESSION_ID_TOO_SHORT         ,"ssl3 session id too short"},
 {SSL_R_SSLV3_ALERT_BAD_CERTIFICATE       ,"sslv3 alert bad certificate"},
 {SSL_R_SSLV3_ALERT_BAD_RECORD_MAC        ,"sslv3 alert bad record mac"},
@@ -304,12 +324,30 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_SSL_HANDSHAKE_FAILURE             ,"ssl handshake failure"},
 {SSL_R_SSL_LIBRARY_HAS_NO_CIPHERS        ,"ssl library has no ciphers"},
 {SSL_R_SSL_SESSION_ID_IS_DIFFERENT       ,"ssl session id is different"},
+{SSL_R_TLSV1_ALERT_ACCESS_DENIED         ,"tlsv1 alert access denied"},
+{SSL_R_TLSV1_ALERT_DECODE_ERROR          ,"tlsv1 alert decode error"},
+{SSL_R_TLSV1_ALERT_DECRYPTION_FAILED     ,"tlsv1 alert decryption failed"},
+{SSL_R_TLSV1_ALERT_DECRYPT_ERROR         ,"tlsv1 alert decrypt error"},
+{SSL_R_TLSV1_ALERT_EXPORT_RESTRICION     ,"tlsv1 alert export restricion"},
+{SSL_R_TLSV1_ALERT_INSUFFICIENT_SECURITY ,"tlsv1 alert insufficient security"},
+{SSL_R_TLSV1_ALERT_INTERNAL_ERROR        ,"tlsv1 alert internal error"},
+{SSL_R_TLSV1_ALERT_NO_RENEGOTIATION      ,"tlsv1 alert no renegotiation"},
+{SSL_R_TLSV1_ALERT_PROTOCOL_VERSION      ,"tlsv1 alert protocol version"},
+{SSL_R_TLSV1_ALERT_RECORD_OVERFLOW       ,"tlsv1 alert record overflow"},
+{SSL_R_TLSV1_ALERT_UNKNOWN_CA            ,"tlsv1 alert unknown ca"},
+{SSL_R_TLSV1_ALERT_USER_CANCLED          ,"tlsv1 alert user cancled"},
+{SSL_R_TLS_CLIENT_CERT_REQ_WITH_ANON_CIPHER,"tls client cert req with anon cipher"},
+{SSL_R_TLS_PEER_DID_NOT_RESPOND_WITH_CERTIFICATE_LIST,"tls peer did not respond with certificate list"},
+{SSL_R_TLS_RSA_ENCRYPTED_VALUE_LENGTH_IS_WRONG,"tls rsa encrypted value length is wrong"},
 {SSL_R_TRIED_TO_USE_UNSUPPORTED_CIPHER   ,"tried to use unsupported cipher"},
 {SSL_R_UNABLE_TO_DECODE_DH_CERTS         ,"unable to decode dh certs"},
 {SSL_R_UNABLE_TO_EXTRACT_PUBLIC_KEY      ,"unable to extract public key"},
 {SSL_R_UNABLE_TO_FIND_DH_PARAMETERS      ,"unable to find dh parameters"},
 {SSL_R_UNABLE_TO_FIND_PUBLIC_KEY_PARAMETERS,"unable to find public key parameters"},
 {SSL_R_UNABLE_TO_FIND_SSL_METHOD         ,"unable to find ssl method"},
+{SSL_R_UNABLE_TO_LOAD_SSL2_MD5_ROUTINES  ,"unable to load ssl2 md5 routines"},
+{SSL_R_UNABLE_TO_LOAD_SSL3_MD5_ROUTINES  ,"unable to load ssl3 md5 routines"},
+{SSL_R_UNABLE_TO_LOAD_SSL3_SHA1_ROUTINES ,"unable to load ssl3 sha1 routines"},
 {SSL_R_UNEXPECTED_MESSAGE                ,"unexpected message"},
 {SSL_R_UNEXPECTED_RECORD                 ,"unexpected record"},
 {SSL_R_UNKNOWN_ALERT_TYPE                ,"unknown alert type"},
@@ -324,6 +362,7 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_UNKNOWN_STATE                     ,"unknown state"},
 {SSL_R_UNSUPPORTED_CIPHER                ,"unsupported cipher"},
 {SSL_R_UNSUPPORTED_COMPRESSION_ALGORITHM ,"unsupported compression algorithm"},
+{SSL_R_UNSUPPORTED_PROTOCOL              ,"unsupported protocol"},
 {SSL_R_UNSUPPORTED_SSL_VERSION           ,"unsupported ssl version"},
 {SSL_R_WRITE_BIO_NOT_SET                 ,"write bio not set"},
 {SSL_R_WRONG_CIPHER_RETURNED             ,"wrong cipher returned"},
@@ -334,8 +373,11 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {SSL_R_WRONG_SSL_VERSION                 ,"wrong ssl version"},
 {SSL_R_WRONG_VERSION_NUMBER              ,"wrong version number"},
 {SSL_R_X509_LIB                          ,"x509 lib"},
+{SSL_R_X509_VERIFICATION_SETUP_PROBLEMS  ,"x509 verification setup problems"},
 {0,NULL},
 	};
+
+#endif
 
 void ERR_load_SSL_strings()
 	{
@@ -344,7 +386,10 @@ void ERR_load_SSL_strings()
 	if (init)
 		{
 		init=0;
+#ifndef NO_ERR
 		ERR_load_strings(ERR_LIB_SSL,SSL_str_functs);
 		ERR_load_strings(ERR_LIB_SSL,SSL_str_reasons);
+#endif
+
 		}
 	}

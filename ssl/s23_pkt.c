@@ -1,5 +1,5 @@
 /* ssl/s23_pkt.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -76,7 +76,7 @@ SSL *s;
 		{
 		s->rwstate=SSL_WRITING;
 		i=BIO_write(s->wbio,&(buf[tot]),num);
-		if (i < 0)
+		if (i <= 0)
 			{
 			s->init_off=tot;
 			s->init_num=num;
