@@ -1,5 +1,5 @@
 /* crypto/bio/bss_sock.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -107,7 +107,8 @@ int BIO_fd_should_retry();
 #ifndef BIO_FD
 static BIO_METHOD methods_sockp=
 	{
-	BIO_TYPE_SOCKET,"socket",
+	BIO_TYPE_SOCKET,
+	"socket",
 	sock_write,
 	sock_read,
 	sock_puts,
@@ -188,11 +189,7 @@ BIO *a;
 			{
 #ifndef BIO_FD
 			shutdown(a->num,2);
-# ifdef WINDOWS
 			closesocket(a->num);
-# else
-			close(a->num);
-# endif
 #else			/* BIO_FD */
 			close(a->num);
 #endif
@@ -217,10 +214,11 @@ int outl;
 
 	if (out != NULL)
 		{
-		errno=0;
-#if defined(WINDOWS) && !defined(BIO_FD)
-		ret=recv(b->num,out,outl,0);
+#ifndef BIO_FD
+		clear_socket_error();
+		ret=readsocket(b->num,out,outl);
 #else
+		clear_sys_error();
 		ret=read(b->num,out,outl);
 #endif
 		BIO_clear_retry_flags(b);
@@ -248,10 +246,11 @@ int inl;
 	{
 	int ret;
 	
-	errno=0;
-#if defined(WINDOWS) && !defined(BIO_FD)
-	ret=send(b->num,in,inl,0);
+#ifndef BIO_FD
+	clear_socket_error();
+	ret=writesocket(b->num,in,inl);
 #else
+	clear_sys_error();
 	ret=write(b->num,in,inl);
 #endif
 	BIO_clear_retry_flags(b);
@@ -283,14 +282,21 @@ char *ptr;
 	switch (cmd)
 		{
 	case BIO_CTRL_RESET:
+		num=0;
+	case BIO_C_FILE_SEEK:
 #ifdef BIO_FD
-		ret=(long)lseek(b->num,0,0);
+		ret=(long)lseek(b->num,num,0);
 #else
 		ret=0;
 #endif
 		break;
+	case BIO_C_FILE_TELL:
 	case BIO_CTRL_INFO:
+#ifdef BIO_FD
+		ret=(long)lseek(b->num,0,1);
+#else
 		ret=0;
+#endif
 		break;
 	case BIO_C_SET_FD:
 #ifndef BIO_FD
@@ -325,7 +331,6 @@ char *ptr;
 	case BIO_CTRL_DUP:
 	case BIO_CTRL_FLUSH:
 		ret=1;
-		break;
 		break;
 	default:
 		ret=0;
@@ -370,20 +375,25 @@ int BIO_fd_should_retry(i)
 #endif
 int i;
 	{
+	int err;
+
 	if ((i == 0) || (i == -1))
 		{
-#if !defined(BIO_FD) && defined(WINDOWS)
-		errno=WSAGetLastError();
+#ifndef BIO_FD
+		err=get_last_socket_error();
+#else
+		err=get_last_sys_error();
 #endif
 
-#if defined(WINDOWS) /* more microsoft stupidity */
-		if ((i == -1) && (errno == 0))
+#if defined(WINDOWS) && 0 /* more microsoft stupidity *//* perhaps not? Ben 4/1/99 */
+		if ((i == -1) && (err == 0))
 			return(1);
 #endif
+
 #ifndef BIO_FD
-		return(BIO_sock_non_fatal_error(errno));
+		return(BIO_sock_non_fatal_error(err));
 #else
-		return(BIO_fd_non_fatal_error(errno));
+		return(BIO_fd_non_fatal_error(err));
 #endif
 		}
 	return(0);
@@ -403,8 +413,10 @@ int err;
 	case WSAEWOULDBLOCK:
 # endif
 
-# if defined(WSAENOTCONN)
+# if 0 /* This appears to always be an error */
+#  if defined(WSAENOTCONN)
 	case WSAENOTCONN:
+#  endif
 # endif
 #endif
 
@@ -416,6 +428,10 @@ int err;
 # else
 	case EWOULDBLOCK:
 # endif
+#endif
+
+#if defined(ENOTCONN)
+	case ENOTCONN:
 #endif
 
 #ifdef EINTR
@@ -440,7 +456,7 @@ int err;
 	case EALREADY:
 #endif
 		return(1);
-		break;
+		/* break; */
 	default:
 		break;
 		}
