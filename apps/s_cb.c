@@ -1,5 +1,5 @@
 /* apps/s_cb.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -71,7 +71,6 @@
 int verify_depth=0;
 int verify_error=X509_V_OK;
 
-/* should be X509 * but we can just have them as char *. */
 int MS_CALLBACK verify_callback(ok, ctx)
 int ok;
 X509_STORE_CTX *ctx;
@@ -110,13 +109,13 @@ X509_STORE_CTX *ctx;
 	case X509_V_ERR_CERT_NOT_YET_VALID:
 	case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
 		BIO_printf(bio_err,"notBefore=");
-		ASN1_UTCTIME_print(bio_err,X509_get_notBefore(ctx->current_cert));
+		ASN1_TIME_print(bio_err,X509_get_notBefore(ctx->current_cert));
 		BIO_printf(bio_err,"\n");
 		break;
 	case X509_V_ERR_CERT_HAS_EXPIRED:
 	case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
 		BIO_printf(bio_err,"notAfter=");
-		ASN1_UTCTIME_print(bio_err,X509_get_notAfter(ctx->current_cert));
+		ASN1_TIME_print(bio_err,X509_get_notAfter(ctx->current_cert));
 		BIO_printf(bio_err,"\n");
 		break;
 		}
@@ -131,13 +130,15 @@ char *key_file;
 	{
 	if (cert_file != NULL)
 		{
+		/*
 		SSL *ssl;
 		X509 *x509;
+		*/
 
 		if (SSL_CTX_use_certificate_file(ctx,cert_file,
 			SSL_FILETYPE_PEM) <= 0)
 			{
-			BIO_printf(bio_err,"unable to set certificate file\n");
+			BIO_printf(bio_err,"unable to get certificate from '%s'\n",cert_file);
 			ERR_print_errors(bio_err);
 			return(0);
 			}
@@ -145,11 +146,13 @@ char *key_file;
 		if (SSL_CTX_use_PrivateKey_file(ctx,key_file,
 			SSL_FILETYPE_PEM) <= 0)
 			{
-			BIO_printf(bio_err,"unable to set public key file\n");
+			BIO_printf(bio_err,"unable to get private key from '%s'\n",key_file);
 			ERR_print_errors(bio_err);
 			return(0);
 			}
 
+		/*
+		In theory this is no longer needed 
 		ssl=SSL_new(ctx);
 		x509=SSL_get_certificate(ssl);
 
@@ -157,6 +160,7 @@ char *key_file;
 			EVP_PKEY_copy_parameters(X509_get_pubkey(x509),
 				SSL_get_privatekey(ssl));
 		SSL_free(ssl);
+		*/
 
 		/* If we are using DSA, we can copy the parameters from
 		 * the private key */
