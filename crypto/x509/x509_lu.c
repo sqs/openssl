@@ -1,5 +1,5 @@
 /* crypto/x509/x509_lu.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -61,6 +61,9 @@
 #include "lhash.h"
 #include "x509.h"
 
+static STACK *x509_store_meth=NULL;
+static STACK *x509_store_ctx_meth=NULL;
+
 X509_LOOKUP *X509_LOOKUP_new(method)
 X509_LOOKUP_METHOD *method;
 	{
@@ -106,7 +109,7 @@ int X509_LOOKUP_shutdown(ctx)
 X509_LOOKUP *ctx;
 	{
 	if (ctx->method == NULL) return(0);
-	if (ctx->method->init != NULL)
+	if (ctx->method->shutdown != NULL)
 		return(ctx->method->shutdown(ctx));
 	else
 		return(1);
@@ -170,7 +173,7 @@ char *str;
 int len;
 X509_OBJECT *ret;
 	{
-	if ((ctx->method == NULL) || (ctx->method->get_by_alias))
+	if ((ctx->method == NULL) || (ctx->method->get_by_alias == NULL))
 		return(X509_LU_FAIL);
 	return(ctx->method->get_by_alias(ctx,str,len,ret));
 	}
@@ -226,8 +229,9 @@ X509_STORE *X509_STORE_new()
 	ret->get_cert_methods=sk_new_null();
 	ret->verify=NULL;
 	ret->verify_cb=NULL;
-	ret->app_data=NULL;
+	memset(&ret->ex_data,0,sizeof(CRYPTO_EX_DATA));
 	ret->references=1;
+	ret->depth=0;
 	return(ret);
 	}
 
@@ -264,6 +268,7 @@ X509_STORE *vfy;
 		}
 	sk_free(sk);
 
+	CRYPTO_free_ex_data(x509_store_meth,(char *)vfy,&vfy->ex_data);
 	lh_doall(vfy->certs,cleanup);
 	lh_free(vfy->certs);
 	Free(vfy);
@@ -314,7 +319,7 @@ X509_OBJECT *ret;
 	X509_OBJECT stmp,*tmp;
 	int i,j;
 
-	tmp=X509_OBJECT_retrive_by_subject(ctx->certs,type,name);
+	tmp=X509_OBJECT_retrieve_by_subject(ctx->certs,type,name);
 
 	if (tmp == NULL)
 		{
@@ -377,7 +382,7 @@ X509_OBJECT *a;
 		}
 	}
 
-X509_OBJECT *X509_OBJECT_retrive_by_subject(h,type,name)
+X509_OBJECT *X509_OBJECT_retrieve_by_subject(h,type,name)
 LHASH *h;
 int type;
 X509_NAME *name;
@@ -425,6 +430,7 @@ STACK *chain;
 	ctx->depth=10;
 	ctx->error=0;
 	ctx->current_cert=NULL;
+	memset(&(ctx->ex_data),0,sizeof(CRYPTO_EX_DATA));
 	}
 
 void X509_STORE_CTX_cleanup(ctx)
@@ -435,5 +441,7 @@ X509_STORE_CTX *ctx;
 		sk_pop_free(ctx->chain,X509_free);
 		ctx->chain=NULL;
 		}
+	CRYPTO_free_ex_data(x509_store_ctx_meth,(char *)ctx,&(ctx->ex_data));
+	memset(&ctx->ex_data,0,sizeof(CRYPTO_EX_DATA));
 	}
 
