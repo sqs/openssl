@@ -1,5 +1,5 @@
 /* crypto/des/des_ver.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -56,5 +56,5 @@
  * [including the GNU Public Licence.]
  */
 
-extern char *DES_version;	/* SSLeay version string */
-extern char *libdes_version;	/* old libdes version string */
+EXTERN char *DES_version;	/* SSLeay version string */
+EXTERN char *libdes_version;	/* old libdes version string */

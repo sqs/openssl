@@ -1,5 +1,5 @@
 /* crypto/des/spr.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -56,7 +56,7 @@
  * [including the GNU Public Licence.]
  */
 
-const DES_LONG des_SPtrans[8][64]={
+GLOBAL const DES_LONG des_SPtrans[8][64]={
 {
 /* nibble 0 */
 0x02080800L, 0x00080000L, 0x02000002L, 0x02080802L,
