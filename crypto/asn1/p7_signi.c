@@ -1,5 +1,5 @@
 /* crypto/asn1/p7_signi.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,8 +62,8 @@
 #include "x509.h"
 
 /*
- * ASN1err(ASN1_F_PKCS7_SIGNER_INFO_NEW,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_D2I_PKCS7_SIGNER_INFO,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_PKCS7_SIGNER_INFO_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_PKCS7_SIGNER_INFO,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
 int i2d_PKCS7_SIGNER_INFO(a,pp)
@@ -75,20 +75,20 @@ unsigned char **pp;
 	M_ASN1_I2D_len(a->version,i2d_ASN1_INTEGER);
 	M_ASN1_I2D_len(a->issuer_and_serial,i2d_PKCS7_ISSUER_AND_SERIAL);
 	M_ASN1_I2D_len(a->digest_alg,i2d_X509_ALGOR);
-	M_ASN1_I2D_len_IMP_set_opt(a->auth_attr,i2d_X509_ATTRIBUTE,0);
+	M_ASN1_I2D_len_IMP_SET_opt(a->auth_attr,i2d_X509_ATTRIBUTE,0);
 	M_ASN1_I2D_len(a->digest_enc_alg,i2d_X509_ALGOR);
 	M_ASN1_I2D_len(a->enc_digest,i2d_ASN1_OCTET_STRING);
-	M_ASN1_I2D_len_IMP_set_opt(a->unauth_attr,i2d_X509_ATTRIBUTE,1);
+	M_ASN1_I2D_len_IMP_SET_opt(a->unauth_attr,i2d_X509_ATTRIBUTE,1);
 
 	M_ASN1_I2D_seq_total();
 
 	M_ASN1_I2D_put(a->version,i2d_ASN1_INTEGER);
 	M_ASN1_I2D_put(a->issuer_and_serial,i2d_PKCS7_ISSUER_AND_SERIAL);
 	M_ASN1_I2D_put(a->digest_alg,i2d_X509_ALGOR);
-	M_ASN1_I2D_put_IMP_set_opt(a->auth_attr,i2d_X509_ATTRIBUTE,0);
+	M_ASN1_I2D_put_IMP_SET_opt(a->auth_attr,i2d_X509_ATTRIBUTE,0);
 	M_ASN1_I2D_put(a->digest_enc_alg,i2d_X509_ALGOR);
 	M_ASN1_I2D_put(a->enc_digest,i2d_ASN1_OCTET_STRING);
-	M_ASN1_I2D_put_IMP_set_opt(a->unauth_attr,i2d_X509_ATTRIBUTE,1);
+	M_ASN1_I2D_put_IMP_SET_opt(a->unauth_attr,i2d_X509_ATTRIBUTE,1);
 
 	M_ASN1_I2D_finish();
 	}
@@ -105,10 +105,12 @@ long length;
 	M_ASN1_D2I_get(ret->version,d2i_ASN1_INTEGER);
 	M_ASN1_D2I_get(ret->issuer_and_serial,d2i_PKCS7_ISSUER_AND_SERIAL);
 	M_ASN1_D2I_get(ret->digest_alg,d2i_X509_ALGOR);
-	M_ASN1_D2I_get_IMP_set_opt(ret->auth_attr,d2i_X509_ATTRIBUTE,0);
+	M_ASN1_D2I_get_IMP_set_opt(ret->auth_attr,d2i_X509_ATTRIBUTE,
+		X509_ATTRIBUTE_free,0);
 	M_ASN1_D2I_get(ret->digest_enc_alg,d2i_X509_ALGOR);
 	M_ASN1_D2I_get(ret->enc_digest,d2i_ASN1_OCTET_STRING);
-	M_ASN1_D2I_get_IMP_set_opt(ret->unauth_attr,d2i_X509_ATTRIBUTE,1);
+	M_ASN1_D2I_get_IMP_set_opt(ret->unauth_attr,d2i_X509_ATTRIBUTE,
+		X509_ATTRIBUTE_free,1);
 
 	M_ASN1_D2I_Finish(a,PKCS7_SIGNER_INFO_free,
 		ASN1_F_D2I_PKCS7_SIGNER_INFO);
@@ -117,6 +119,7 @@ long length;
 PKCS7_SIGNER_INFO *PKCS7_SIGNER_INFO_new()
 	{
 	PKCS7_SIGNER_INFO *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,PKCS7_SIGNER_INFO);
 	M_ASN1_New(ret->version,ASN1_INTEGER_new);

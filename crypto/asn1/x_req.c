@@ -1,5 +1,5 @@
 /* crypto/asn1/x_req.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,10 +62,10 @@
 #include "x509.h"
 
 /*
- * ASN1err(ASN1_F_D2I_X509_REQ,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_D2I_X509_REQ_INFO,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_X509_REQ_NEW,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_X509_REQ_INFO_NEW,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_X509_REQ,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_X509_REQ_INFO,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_X509_REQ_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_X509_REQ_INFO_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
 int i2d_X509_REQ_INFO(a,pp)
@@ -87,11 +87,11 @@ unsigned char **pp;
 	 */
 	if (a->req_kludge) 
 	        {
-	        M_ASN1_I2D_len_IMP_set_opt(a->attributes,i2d_X509_ATTRIBUTE,0);
+	        M_ASN1_I2D_len_IMP_SET_opt(a->attributes,i2d_X509_ATTRIBUTE,0);
 		}
 	else
 	        {
-	        M_ASN1_I2D_len_IMP_set(a->attributes,	i2d_X509_ATTRIBUTE,0);
+	        M_ASN1_I2D_len_IMP_SET(a->attributes,	i2d_X509_ATTRIBUTE,0);
 		}
 	
 	M_ASN1_I2D_seq_total();
@@ -107,11 +107,11 @@ unsigned char **pp;
 	 */
 	if (a->req_kludge)
 		{
-	        M_ASN1_I2D_put_IMP_set_opt(a->attributes,i2d_X509_ATTRIBUTE,0);
+	        M_ASN1_I2D_put_IMP_SET_opt(a->attributes,i2d_X509_ATTRIBUTE,0);
 		}
 	else
 		{
-	        M_ASN1_I2D_put_IMP_set(a->attributes,i2d_X509_ATTRIBUTE,0);
+	        M_ASN1_I2D_put_IMP_SET(a->attributes,i2d_X509_ATTRIBUTE,0);
 		}
 
 	M_ASN1_I2D_finish();
@@ -141,7 +141,8 @@ long length;
 		ret->req_kludge=1;
 	else
 		{
-		M_ASN1_D2I_get_IMP_set(ret->attributes,d2i_X509_ATTRIBUTE,0);
+		M_ASN1_D2I_get_IMP_set(ret->attributes,d2i_X509_ATTRIBUTE,
+			X509_ATTRIBUTE_free,0);
 		}
 
 	M_ASN1_D2I_Finish(a,X509_REQ_INFO_free,ASN1_F_D2I_X509_REQ_INFO);
@@ -150,6 +151,7 @@ long length;
 X509_REQ_INFO *X509_REQ_INFO_new()
 	{
 	X509_REQ_INFO *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,X509_REQ_INFO);
 	M_ASN1_New(ret->version,ASN1_INTEGER_new);
@@ -208,6 +210,7 @@ long length;
 X509_REQ *X509_REQ_new()
 	{
 	X509_REQ *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,X509_REQ);
 	ret->references=1;
@@ -226,6 +229,9 @@ X509_REQ *a;
 	if (a == NULL) return;
 
 	i=CRYPTO_add(&a->references,-1,CRYPTO_LOCK_X509_REQ);
+#ifdef REF_PRINT
+	REF_PRINT("X509_REQ",a);
+#endif
 	if (i > 0) return;
 #ifdef REF_CHECK
 	if (i < 0)

@@ -1,5 +1,5 @@
 /* crypto/asn1/x_crl.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,12 +62,12 @@
 #include "x509.h"
 
 /*
- * ASN1err(ASN1_F_D2I_X509_CRL,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_D2I_X509_CRL_INFO,ASN1_R_EXPECTING_A_SEQUENCE);
- * ASN1err(ASN1_F_D2I_X509_REVOKED,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_X509_CRL_NEW,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_X509_CRL_INFO_NEW,ASN1_R_EXPECTING_A_SEQUENCE);
- * ASN1err(ASN1_F_X509_REVOKED_NEW,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_X509_CRL,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_X509_CRL_INFO,ERR_R_EXPECTING_AN_ASN1_SEQUENCE);
+ * ASN1err(ASN1_F_D2I_X509_REVOKED,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_X509_CRL_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_X509_CRL_INFO_NEW,ERR_R_EXPECTING_AN_ASN1_SEQUENCE);
+ * ASN1err(ASN1_F_X509_REVOKED_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
 #ifndef NOPROTO
@@ -86,13 +86,13 @@ unsigned char **pp;
 
 	M_ASN1_I2D_len(a->serialNumber,i2d_ASN1_INTEGER);
 	M_ASN1_I2D_len(a->revocationDate,i2d_ASN1_UTCTIME);
-	M_ASN1_I2D_len_SEQ_opt(a->extensions,i2d_X509_EXTENSION);
+	M_ASN1_I2D_len_SEQUENCE_opt(a->extensions,i2d_X509_EXTENSION);
 
 	M_ASN1_I2D_seq_total();
 
 	M_ASN1_I2D_put(a->serialNumber,i2d_ASN1_INTEGER);
 	M_ASN1_I2D_put(a->revocationDate,i2d_ASN1_UTCTIME);
-	M_ASN1_I2D_put_SEQ_opt(a->extensions,i2d_X509_EXTENSION);
+	M_ASN1_I2D_put_SEQUENCE_opt(a->extensions,i2d_X509_EXTENSION);
 
 	M_ASN1_I2D_finish();
 	}
@@ -108,7 +108,8 @@ long length;
 	M_ASN1_D2I_start_sequence();
 	M_ASN1_D2I_get(ret->serialNumber,d2i_ASN1_INTEGER);
 	M_ASN1_D2I_get(ret->revocationDate,d2i_ASN1_UTCTIME);
-	M_ASN1_D2I_get_seq_opt(ret->extensions,d2i_X509_EXTENSION);
+	M_ASN1_D2I_get_seq_opt(ret->extensions,d2i_X509_EXTENSION,
+		X509_EXTENSION_free);
 	M_ASN1_D2I_Finish(a,X509_REVOKED_free,ASN1_F_D2I_X509_REVOKED);
 	}
 
@@ -130,9 +131,10 @@ unsigned char **pp;
 	M_ASN1_I2D_len(a->sig_alg,i2d_X509_ALGOR);
 	M_ASN1_I2D_len(a->issuer,i2d_X509_NAME);
 	M_ASN1_I2D_len(a->lastUpdate,i2d_ASN1_UTCTIME);
-	M_ASN1_I2D_len(a->nextUpdate,i2d_ASN1_UTCTIME);
-	M_ASN1_I2D_len_SEQ_opt(a->revoked,i2d_X509_REVOKED);
-	M_ASN1_I2D_len_EXP_set_opt(a->extensions,i2d_X509_EXTENSION,0,
+	if (a->nextUpdate != NULL)
+		{ M_ASN1_I2D_len(a->nextUpdate,i2d_ASN1_UTCTIME); }
+	M_ASN1_I2D_len_SEQUENCE_opt(a->revoked,i2d_X509_REVOKED);
+	M_ASN1_I2D_len_EXP_SEQUENCE_opt(a->extensions,i2d_X509_EXTENSION,0,
 		V_ASN1_SEQUENCE,v1);
 
 	M_ASN1_I2D_seq_total();
@@ -144,9 +146,10 @@ unsigned char **pp;
 	M_ASN1_I2D_put(a->sig_alg,i2d_X509_ALGOR);
 	M_ASN1_I2D_put(a->issuer,i2d_X509_NAME);
 	M_ASN1_I2D_put(a->lastUpdate,i2d_ASN1_UTCTIME);
-	M_ASN1_I2D_put(a->nextUpdate,i2d_ASN1_UTCTIME);
-	M_ASN1_I2D_put_SEQ_opt(a->revoked,i2d_X509_REVOKED);
-	M_ASN1_I2D_put_EXP_set_opt(a->extensions,i2d_X509_EXTENSION,0,
+	if (a->nextUpdate != NULL)
+		{ M_ASN1_I2D_put(a->nextUpdate,i2d_ASN1_UTCTIME); }
+	M_ASN1_I2D_put_SEQUENCE_opt(a->revoked,i2d_X509_REVOKED);
+	M_ASN1_I2D_put_EXP_SEQUENCE_opt(a->extensions,i2d_X509_EXTENSION,0,
 		V_ASN1_SEQUENCE,v1);
 
 	M_ASN1_I2D_finish();
@@ -175,13 +178,13 @@ long length;
 	M_ASN1_D2I_get(ret->sig_alg,d2i_X509_ALGOR);
 	M_ASN1_D2I_get(ret->issuer,d2i_X509_NAME);
 	M_ASN1_D2I_get(ret->lastUpdate,d2i_ASN1_UTCTIME);
-	M_ASN1_D2I_get(ret->nextUpdate,d2i_ASN1_UTCTIME);
+	M_ASN1_D2I_get_opt(ret->nextUpdate,d2i_ASN1_UTCTIME,V_ASN1_UTCTIME);
 	if (ret->revoked != NULL)
 		{
 		while (sk_num(ret->revoked))
 			X509_REVOKED_free((X509_REVOKED *)sk_pop(ret->revoked));
 		}
-	M_ASN1_D2I_get_seq_opt(ret->revoked,d2i_X509_REVOKED);
+	M_ASN1_D2I_get_seq_opt(ret->revoked,d2i_X509_REVOKED,X509_REVOKED_free);
 
 	if (ret->revoked != NULL)
 		{
@@ -201,7 +204,7 @@ long length;
 			}
 			
 		M_ASN1_D2I_get_EXP_set_opt(ret->extensions,d2i_X509_EXTENSION,
-			0,V_ASN1_SEQUENCE);
+			X509_EXTENSION_free,0,V_ASN1_SEQUENCE);
 		}
 
 	M_ASN1_D2I_Finish(a,X509_CRL_INFO_free,ASN1_F_D2I_X509_CRL_INFO);
@@ -246,6 +249,7 @@ long length;
 X509_REVOKED *X509_REVOKED_new()
 	{
 	X509_REVOKED *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,X509_REVOKED);
 	M_ASN1_New(ret->serialNumber,ASN1_INTEGER_new);
@@ -258,13 +262,14 @@ X509_REVOKED *X509_REVOKED_new()
 X509_CRL_INFO *X509_CRL_INFO_new()
 	{
 	X509_CRL_INFO *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,X509_CRL_INFO);
 	ret->version=NULL;
 	M_ASN1_New(ret->sig_alg,X509_ALGOR_new);
 	M_ASN1_New(ret->issuer,X509_NAME_new);
 	M_ASN1_New(ret->lastUpdate,ASN1_UTCTIME_new);
-	M_ASN1_New(ret->nextUpdate,ASN1_UTCTIME_new);
+	ret->nextUpdate=NULL;
 	M_ASN1_New(ret->revoked,sk_new_null);
 	M_ASN1_New(ret->extensions,sk_new_null);
 	ret->revoked->comp=(int (*)())X509_REVOKED_cmp;
@@ -275,6 +280,7 @@ X509_CRL_INFO *X509_CRL_INFO_new()
 X509_CRL *X509_CRL_new()
 	{
 	X509_CRL *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,X509_CRL);
 	ret->references=1;
@@ -303,7 +309,8 @@ X509_CRL_INFO *a;
 	X509_ALGOR_free(a->sig_alg);
 	X509_NAME_free(a->issuer);
 	ASN1_UTCTIME_free(a->lastUpdate);
-	ASN1_UTCTIME_free(a->nextUpdate);
+	if (a->nextUpdate)
+		ASN1_UTCTIME_free(a->nextUpdate);
 	sk_pop_free(a->revoked,X509_REVOKED_free);
 	sk_pop_free(a->extensions,X509_EXTENSION_free);
 	Free((char *)a);
@@ -317,6 +324,9 @@ X509_CRL *a;
 	if (a == NULL) return;
 
 	i=CRYPTO_add(&a->references,-1,CRYPTO_LOCK_X509_CRL);
+#ifdef REF_PRINT
+	REF_PRINT("X509_CRL",a);
+#endif
 	if (i > 0) return;
 #ifdef REF_CHECK
 	if (i < 0)

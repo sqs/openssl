@@ -1,5 +1,5 @@
 /* crypto/asn1/p7_s_e.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,8 +62,8 @@
 #include "x509.h"
 
 /*
- * ASN1err(ASN1_F_PKCS7_SIGN_ENVELOPE_NEW,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_D2I_PKCS7_SIGN_ENVELOPE,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_PKCS7_SIGN_ENVELOPE_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_PKCS7_SIGN_ENVELOPE,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
 int i2d_PKCS7_SIGN_ENVELOPE(a,pp)
@@ -76,8 +76,8 @@ unsigned char **pp;
 	M_ASN1_I2D_len_SET(a->recipientinfo,i2d_PKCS7_RECIP_INFO);
 	M_ASN1_I2D_len_SET(a->md_algs,i2d_X509_ALGOR);
 	M_ASN1_I2D_len(a->enc_data,i2d_PKCS7_ENC_CONTENT);
-	M_ASN1_I2D_len_IMP_set_opt(a->cert,i2d_X509,0);
-	M_ASN1_I2D_len_IMP_set_opt(a->crl,i2d_X509_CRL,1);
+	M_ASN1_I2D_len_IMP_SEQUENCE_opt(a->cert,i2d_X509,0);
+	M_ASN1_I2D_len_IMP_SET_opt(a->crl,i2d_X509_CRL,1);
 	M_ASN1_I2D_len_SET(a->signer_info,i2d_PKCS7_SIGNER_INFO);
 
 	M_ASN1_I2D_seq_total();
@@ -86,8 +86,8 @@ unsigned char **pp;
 	M_ASN1_I2D_put_SET(a->recipientinfo,i2d_PKCS7_RECIP_INFO);
 	M_ASN1_I2D_put_SET(a->md_algs,i2d_X509_ALGOR);
 	M_ASN1_I2D_put(a->enc_data,i2d_PKCS7_ENC_CONTENT);
-	M_ASN1_I2D_put_IMP_set_opt(a->cert,i2d_X509,0);
-	M_ASN1_I2D_put_IMP_set_opt(a->crl,i2d_X509_CRL,1);
+	M_ASN1_I2D_put_IMP_SEQUENCE_opt(a->cert,i2d_X509,0);
+	M_ASN1_I2D_put_IMP_SET_opt(a->crl,i2d_X509_CRL,1);
 	M_ASN1_I2D_put_SET(a->signer_info,i2d_PKCS7_SIGNER_INFO);
 
 	M_ASN1_I2D_finish();
@@ -103,12 +103,14 @@ long length;
 	M_ASN1_D2I_Init();
 	M_ASN1_D2I_start_sequence();
 	M_ASN1_D2I_get(ret->version,d2i_ASN1_INTEGER);
-	M_ASN1_D2I_get_set(ret->recipientinfo,d2i_PKCS7_RECIP_INFO);
-	M_ASN1_D2I_get_set(ret->md_algs,d2i_X509_ALGOR);
+	M_ASN1_D2I_get_set(ret->recipientinfo,d2i_PKCS7_RECIP_INFO,
+		PKCS7_RECIP_INFO_free);
+	M_ASN1_D2I_get_set(ret->md_algs,d2i_X509_ALGOR,X509_ALGOR_free);
 	M_ASN1_D2I_get(ret->enc_data,d2i_PKCS7_ENC_CONTENT);
-	M_ASN1_D2I_get_IMP_set_opt(ret->cert,d2i_X509,0);
-	M_ASN1_D2I_get_IMP_set_opt(ret->crl,d2i_X509_CRL,1);
-	M_ASN1_D2I_get_set(ret->signer_info,d2i_PKCS7_SIGNER_INFO);
+	M_ASN1_D2I_get_IMP_set_opt(ret->cert,d2i_X509,X509_free,0);
+	M_ASN1_D2I_get_IMP_set_opt(ret->crl,d2i_X509_CRL,X509_CRL_free,1);
+	M_ASN1_D2I_get_set(ret->signer_info,d2i_PKCS7_SIGNER_INFO,
+		PKCS7_SIGNER_INFO_free);
 
 	M_ASN1_D2I_Finish(a,PKCS7_SIGN_ENVELOPE_free,
 		ASN1_F_D2I_PKCS7_SIGN_ENVELOPE);
@@ -117,6 +119,7 @@ long length;
 PKCS7_SIGN_ENVELOPE *PKCS7_SIGN_ENVELOPE_new()
 	{
 	PKCS7_SIGN_ENVELOPE *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,PKCS7_SIGN_ENVELOPE);
 	M_ASN1_New(ret->version,ASN1_INTEGER_new);
