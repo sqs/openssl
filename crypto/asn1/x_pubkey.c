@@ -1,5 +1,5 @@
 /* crypto/asn1/x_pubkey.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -61,8 +61,8 @@
 #include "asn1_mac.h"
 
 /*
- * ASN1err(ASN1_F_D2I_X509_PUBKEY,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_X509_PUBKEY_NEW,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_X509_PUBKEY,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_X509_PUBKEY_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
 int i2d_X509_PUBKEY(a,pp)
@@ -104,6 +104,7 @@ long length;
 X509_PUBKEY *X509_PUBKEY_new()
 	{
 	X509_PUBKEY *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,X509_PUBKEY);
 	M_ASN1_New(ret->algor,X509_ALGOR_new);
@@ -187,6 +188,10 @@ EVP_PKEY *pkey;
 	p=s;
 	i2d_PublicKey(pkey,&p);
 	if (!ASN1_BIT_STRING_set(pk->public_key,s,i)) goto err;
+	/* Set number of unused bits to zero */
+	pk->public_key->flags&= ~(ASN1_STRING_FLAG_BITS_LEFT|0x07);
+	pk->public_key->flags|=ASN1_STRING_FLAG_BITS_LEFT;
+
 	Free(s);
 
 	CRYPTO_add(&pkey->references,1,CRYPTO_LOCK_EVP_PKEY);
@@ -211,12 +216,16 @@ X509_PUBKEY *key;
 	long j;
 	int type;
 	unsigned char *p;
+#ifndef NO_DSA
 	X509_ALGOR *a;
+#endif
 
-	if (key->pkey != NULL)
-		{
-		return(key->pkey);
-		}
+	if (key == NULL) goto err;
+
+	if (key->pkey != NULL) return(key->pkey);
+
+	if (key->public_key == NULL) goto err;
+
 	type=OBJ_obj2nid(key->algor->algorithm);
 	p=key->public_key->data;
         j=key->public_key->length;
