@@ -1,5 +1,5 @@
 /* crypto/rand/randfile.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -58,6 +58,7 @@
 
 #include <stdio.h>
 #include "cryptlib.h"
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "rand.h"
@@ -69,7 +70,7 @@
 /* #define RFILE ".rand" - defined in ../../e_os.h */
 
 int RAND_load_file(file,bytes)
-char *file;
+const char *file;
 long bytes;
 	{
 	MS_STATIC unsigned char buf[BUFSIZE];
@@ -86,7 +87,7 @@ long bytes;
 	if (i < 0) return(0);
 	if (bytes <= 0) return(ret);
 
-	in=fopen(file,"r");
+	in=fopen(file,"rb");
 	if (in == NULL) goto err;
 	for (;;)
 		{
@@ -106,7 +107,7 @@ err:
 	}
 
 int RAND_write_file(file)
-char *file;
+const char *file;
 	{
 	unsigned char buf[BUFSIZE];
 	int i,ret=0;

@@ -1,5 +1,5 @@
 /* crypto/rand/rand.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,17 +63,36 @@
 extern "C" {
 #endif
 
+typedef struct rand_meth_st
+	{
 #ifndef NOPROTO
+	void (*seed)(unsigned char *buf, int num);
+	void (*bytes)(unsigned char *buf, int num);
+	void (*cleanup)(void);
+#else
+	void (*seed)();
+	void (*bytes)();
+	void (*cleanup)();
+#endif
+	} RAND_METHOD;
+
+#ifndef NOPROTO
+void RAND_set_rand_method(RAND_METHOD *meth);
+RAND_METHOD *RAND_get_rand_method(void );
+RAND_METHOD *RAND_SSLeay(void);
 void RAND_cleanup(void );
 void RAND_bytes( unsigned char *buf,int num);
 void RAND_seed( unsigned char *buf,int num);
-int  RAND_load_file(char *file,long max_bytes);
-int  RAND_write_file(char *file);
+int  RAND_load_file(const char *file,long max_bytes);
+int  RAND_write_file(const char *file);
 char *RAND_file_name(char *file,int num);
 #ifdef WINDOWS
 void RAND_screen(void);
 #endif
 #else
+void RAND_set_rand_method();
+RAND_METHOD *RAND_get_rand_method();
+RAND_METHOD *RAND_SSLeay();
 void RAND_cleanup();
 void RAND_bytes();
 void RAND_seed();
