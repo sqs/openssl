@@ -1,4 +1,4 @@
-/* crypto/idea/idea.org */
+/* crypto/rc2/rc2.org */
 /* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
@@ -56,57 +56,49 @@
  * [including the GNU Public Licence.]
  */
 
-/* WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
- *
- * Always modify idea.org since idea.h is automatically generated from 
- * it during SSLeay configuration.
- *
- * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
- */
-
-
-#ifndef HEADER_IDEA_H
-#define HEADER_IDEA_H
+#ifndef HEADER_RC2_H
+#define HEADER_RC2_H
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-#define IDEA_ENCRYPT	1
-#define IDEA_DECRYPT	0
+#define RC2_ENCRYPT	1
+#define RC2_DECRYPT	0
 
-#define IDEA_INT unsigned int
-#define IDEA_BLOCK	8
-#define IDEA_KEY_LENGTH	16
+#include "opensslconf.h" /* RC2_INT */
+#define RC2_BLOCK	8
+#define RC2_KEY_LENGTH	16
 
-typedef struct idea_key_st
+typedef struct rc2_key_st
 	{
-	IDEA_INT data[9][6];
-	} IDEA_KEY_SCHEDULE;
+	RC2_INT data[64];
+	} RC2_KEY;
 
 #ifndef NOPROTO
-const char *idea_options(void);
-void idea_ecb_encrypt(unsigned char *in, unsigned char *out,
-	IDEA_KEY_SCHEDULE *ks);
-void idea_set_encrypt_key(unsigned char *key, IDEA_KEY_SCHEDULE *ks);
-void idea_set_decrypt_key(IDEA_KEY_SCHEDULE *ek, IDEA_KEY_SCHEDULE *dk);
-void idea_cbc_encrypt(unsigned char *in, unsigned char *out,
-	long length, IDEA_KEY_SCHEDULE *ks, unsigned char *iv,int enc);
-void idea_cfb64_encrypt(unsigned char *in, unsigned char *out,
-	long length, IDEA_KEY_SCHEDULE *ks, unsigned char *iv,
-	int *num,int enc);
-void idea_ofb64_encrypt(unsigned char *in, unsigned char *out,
-	long length, IDEA_KEY_SCHEDULE *ks, unsigned char *iv, int *num);
-void idea_encrypt(unsigned long *in, IDEA_KEY_SCHEDULE *ks);
+ 
+void RC2_set_key(RC2_KEY *key, int len, unsigned char *data,int bits);
+void RC2_ecb_encrypt(unsigned char *in,unsigned char *out,RC2_KEY *key,
+	int enc);
+void RC2_encrypt(unsigned long *data,RC2_KEY *key);
+void RC2_decrypt(unsigned long *data,RC2_KEY *key);
+void RC2_cbc_encrypt(unsigned char *in, unsigned char *out, long length,
+	RC2_KEY *ks, unsigned char *iv, int enc);
+void RC2_cfb64_encrypt(unsigned char *in, unsigned char *out, long length,
+	RC2_KEY *schedule, unsigned char *ivec, int *num, int enc);
+void RC2_ofb64_encrypt(unsigned char *in, unsigned char *out, long length,
+	RC2_KEY *schedule, unsigned char *ivec, int *num);
+
 #else
-const char *idea_options();
-void idea_ecb_encrypt();
-void idea_set_encrypt_key();
-void idea_set_decrypt_key();
-void idea_cbc_encrypt();
-void idea_cfb64_encrypt();
-void idea_ofb64_encrypt();
-void idea_encrypt();
+
+void RC2_set_key();
+void RC2_ecb_encrypt();
+void RC2_encrypt();
+void RC2_decrypt();
+void RC2_cbc_encrypt();
+void RC2_cfb64_encrypt();
+void RC2_ofb64_encrypt();
+
 #endif
 
 #ifdef  __cplusplus
