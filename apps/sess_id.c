@@ -1,5 +1,5 @@
 /* apps/sess_id.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -69,13 +69,8 @@
 #undef PROG
 #define PROG	sess_id_main
 
-#define FORMAT_UNDEF	0
-#define FORMAT_ASN1	1
-#define FORMAT_TEXT	2
-#define FORMAT_PEM	3
-
 static char *sess_id_usage[]={
-"usage: crl args\n",
+"usage: sess_id args\n",
 "\n",
 " -inform arg     - input format - default PEM (one of DER, TXT or PEM)\n",
 " -outform arg    - output format - default PEM\n",
@@ -109,7 +104,7 @@ char **argv;
 
 	if (bio_err == NULL)
 		if ((bio_err=BIO_new(BIO_s_file())) != NULL)
-			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE);
+			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE|BIO_FP_TEXT);
 
 	informat=FORMAT_PEM;
 	outformat=FORMAT_PEM;
