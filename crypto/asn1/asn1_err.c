@@ -60,6 +60,7 @@
 #include "asn1.h"
 
 /* BEGIN ERROR CODES */
+#ifndef NO_ERR
 static ERR_STRING_DATA ASN1_str_functs[]=
 	{
 {ERR_PACK(0,ASN1_F_A2D_ASN1_OBJECT,0),	"a2d_ASN1_OBJECT"},
@@ -69,6 +70,7 @@ static ERR_STRING_DATA ASN1_str_functs[]=
 {ERR_PACK(0,ASN1_F_ASN1_D2I_BIO,0),	"ASN1_d2i_bio"},
 {ERR_PACK(0,ASN1_F_ASN1_D2I_FP,0),	"ASN1_d2i_fp"},
 {ERR_PACK(0,ASN1_F_ASN1_DUP,0),	"ASN1_dup"},
+{ERR_PACK(0,ASN1_F_ASN1_GENERALIZEDTIME_NEW,0),	"ASN1_GENERALIZEDTIME_NEW"},
 {ERR_PACK(0,ASN1_F_ASN1_GET_OBJECT,0),	"ASN1_get_object"},
 {ERR_PACK(0,ASN1_F_ASN1_HEADER_NEW,0),	"ASN1_HEADER_new"},
 {ERR_PACK(0,ASN1_F_ASN1_I2D_BIO,0),	"ASN1_i2d_bio"},
@@ -79,19 +81,24 @@ static ERR_STRING_DATA ASN1_str_functs[]=
 {ERR_PACK(0,ASN1_F_ASN1_SIGN,0),	"ASN1_SIGN"},
 {ERR_PACK(0,ASN1_F_ASN1_STRING_NEW,0),	"ASN1_STRING_new"},
 {ERR_PACK(0,ASN1_F_ASN1_STRING_TYPE_NEW,0),	"ASN1_STRING_type_new"},
+{ERR_PACK(0,ASN1_F_ASN1_TYPE_GET_INT_OCTETSTRING,0),	"ASN1_TYPE_get_int_octetstring"},
+{ERR_PACK(0,ASN1_F_ASN1_TYPE_GET_OCTETSTRING,0),	"ASN1_TYPE_get_octetstring"},
 {ERR_PACK(0,ASN1_F_ASN1_TYPE_NEW,0),	"ASN1_TYPE_new"},
 {ERR_PACK(0,ASN1_F_ASN1_UTCTIME_NEW,0),	"ASN1_UTCTIME_NEW"},
 {ERR_PACK(0,ASN1_F_ASN1_VERIFY,0),	"ASN1_VERIFY"},
 {ERR_PACK(0,ASN1_F_BN_TO_ASN1_INTEGER,0),	"BN_to_ASN1_INTEGER"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_BIT_STRING,0),	"d2i_ASN1_BIT_STRING"},
+{ERR_PACK(0,ASN1_F_D2I_ASN1_BMPSTRING,0),	"d2i_ASN1_BMPSTRING"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_BOOLEAN,0),	"d2i_ASN1_BOOLEAN"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_BYTES,0),	"d2i_ASN1_bytes"},
+{ERR_PACK(0,ASN1_F_D2I_ASN1_GENERALIZEDTIME,0),	"d2i_ASN1_GENERALIZEDTIME"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_HEADER,0),	"d2i_ASN1_HEADER"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_INTEGER,0),	"d2i_ASN1_INTEGER"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_OBJECT,0),	"d2i_ASN1_OBJECT"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_OCTET_STRING,0),	"d2i_ASN1_OCTET_STRING"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_PRINT_TYPE,0),	"D2I_ASN1_PRINT_TYPE"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_SET,0),	"d2i_ASN1_SET"},
+{ERR_PACK(0,ASN1_F_D2I_ASN1_TIME,0),	"d2i_ASN1_TIME"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_TYPE,0),	"d2i_ASN1_TYPE"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_TYPE_BYTES,0),	"d2i_ASN1_type_bytes"},
 {ERR_PACK(0,ASN1_F_D2I_ASN1_UTCTIME,0),	"d2i_ASN1_UTCTIME"},
@@ -135,8 +142,8 @@ static ERR_STRING_DATA ASN1_str_functs[]=
 {ERR_PACK(0,ASN1_F_D2I_X509_REVOKED,0),	"D2I_X509_REVOKED"},
 {ERR_PACK(0,ASN1_F_D2I_X509_SIG,0),	"D2I_X509_SIG"},
 {ERR_PACK(0,ASN1_F_D2I_X509_VAL,0),	"D2I_X509_VAL"},
-{ERR_PACK(0,ASN1_F_I2A_ASN1_OBJECT,0),	"i2a_ASN1_OBJECT"},
 {ERR_PACK(0,ASN1_F_I2D_ASN1_HEADER,0),	"i2d_ASN1_HEADER"},
+{ERR_PACK(0,ASN1_F_I2D_ASN1_TIME,0),	"i2d_ASN1_TIME"},
 {ERR_PACK(0,ASN1_F_I2D_DHPARAMS,0),	"I2D_DHPARAMS"},
 {ERR_PACK(0,ASN1_F_I2D_DSAPARAMS,0),	"I2D_DSAPARAMS"},
 {ERR_PACK(0,ASN1_F_I2D_DSAPRIVATEKEY,0),	"I2D_DSAPRIVATEKEY"},
@@ -148,6 +155,7 @@ static ERR_STRING_DATA ASN1_str_functs[]=
 {ERR_PACK(0,ASN1_F_I2D_RSAPRIVATEKEY,0),	"I2D_RSAPRIVATEKEY"},
 {ERR_PACK(0,ASN1_F_I2D_RSAPUBLICKEY,0),	"I2D_RSAPUBLICKEY"},
 {ERR_PACK(0,ASN1_F_I2D_X509_ATTRIBUTE,0),	"I2D_X509_ATTRIBUTE"},
+{ERR_PACK(0,ASN1_F_I2T_ASN1_OBJECT,0),	"i2t_ASN1_OBJECT"},
 {ERR_PACK(0,ASN1_F_NETSCAPE_PKEY_NEW,0),	"NETSCAPE_PKEY_NEW"},
 {ERR_PACK(0,ASN1_F_NETSCAPE_SPKAC_NEW,0),	"NETSCAPE_SPKAC_NEW"},
 {ERR_PACK(0,ASN1_F_NETSCAPE_SPKI_NEW,0),	"NETSCAPE_SPKI_NEW"},
@@ -187,7 +195,6 @@ static ERR_STRING_DATA ASN1_str_functs[]=
 static ERR_STRING_DATA ASN1_str_reasons[]=
 	{
 {ASN1_R_BAD_CLASS                        ,"bad class"},
-{ASN1_R_BAD_GET_OBJECT                   ,"bad get object"},
 {ASN1_R_BAD_OBJECT_HEADER                ,"bad object header"},
 {ASN1_R_BAD_PASSWORD_READ                ,"bad password read"},
 {ASN1_R_BAD_PKCS7_CONTENT                ,"bad pkcs7 content"},
@@ -197,24 +204,25 @@ static ERR_STRING_DATA ASN1_str_reasons[]=
 {ASN1_R_BN_LIB                           ,"bn lib"},
 {ASN1_R_BOOLEAN_IS_WRONG_LENGTH          ,"boolean is wrong length"},
 {ASN1_R_BUFFER_TOO_SMALL                 ,"buffer too small"},
+{ASN1_R_DATA_IS_WRONG                    ,"data is wrong"},
 {ASN1_R_DECODING_ERROR                   ,"decoding error"},
-{ASN1_R_ERROR_STACK                      ,"error stack"},
+{ASN1_R_ERROR_PARSING_SET_ELEMENT        ,"error parsing set element"},
 {ASN1_R_EXPECTING_AN_INTEGER             ,"expecting an integer"},
 {ASN1_R_EXPECTING_AN_OBJECT              ,"expecting an object"},
 {ASN1_R_EXPECTING_AN_OCTET_STRING        ,"expecting an octet string"},
 {ASN1_R_EXPECTING_A_BIT_STRING           ,"expecting a bit string"},
 {ASN1_R_EXPECTING_A_BOOLEAN              ,"expecting a boolean"},
-{ASN1_R_EXPECTING_A_SEQUENCE             ,"expecting a sequence"},
+{ASN1_R_EXPECTING_A_GENERALIZEDTIME      ,"expecting a generalizedtime"},
+{ASN1_R_EXPECTING_A_TIME                 ,"expecting a time"},
 {ASN1_R_EXPECTING_A_UTCTIME              ,"expecting a utctime"},
 {ASN1_R_FIRST_NUM_TOO_LARGE              ,"first num too large"},
+{ASN1_R_GENERALIZEDTIME_TOO_LONG         ,"generalizedtime too long"},
 {ASN1_R_HEADER_TOO_LONG                  ,"header too long"},
 {ASN1_R_INVALID_DIGIT                    ,"invalid digit"},
 {ASN1_R_INVALID_SEPARATOR                ,"invalid separator"},
 {ASN1_R_INVALID_TIME_FORMAT              ,"invalid time format"},
 {ASN1_R_IV_TOO_LARGE                     ,"iv too large"},
 {ASN1_R_LENGTH_ERROR                     ,"length error"},
-{ASN1_R_LENGTH_MISMATCH                  ,"length mismatch"},
-{ASN1_R_MISSING_EOS                      ,"missing eos"},
 {ASN1_R_MISSING_SECOND_NUMBER            ,"missing second number"},
 {ASN1_R_NON_HEX_CHARACTERS               ,"non hex characters"},
 {ASN1_R_NOT_ENOUGH_DATA                  ,"not enough data"},
@@ -243,6 +251,8 @@ static ERR_STRING_DATA ASN1_str_reasons[]=
 {0,NULL},
 	};
 
+#endif
+
 void ERR_load_ASN1_strings()
 	{
 	static int init=1;
@@ -250,7 +260,10 @@ void ERR_load_ASN1_strings()
 	if (init)
 		{
 		init=0;
+#ifndef NO_ERR
 		ERR_load_strings(ERR_LIB_ASN1,ASN1_str_functs);
 		ERR_load_strings(ERR_LIB_ASN1,ASN1_str_reasons);
+#endif
+
 		}
 	}
