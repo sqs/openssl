@@ -1,5 +1,5 @@
 /* crypto/asn1/a_sign.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -67,7 +67,6 @@
 #include "x509.h"
 #include "objects.h"
 #include "buffer.h"
-#include "pem.h"
 
 int ASN1_sign(i2d,algor1,algor2,signature,data,pkey,type)
 int (*i2d)();
@@ -136,7 +135,11 @@ EVP_MD *type;
 	signature->data=buf_out;
 	buf_out=NULL;
 	signature->length=outl;
-
+	/* In the interests of compatability, I'll make sure that
+	 * the bit string has a 'not-used bits' value of 0
+	 */
+	signature->flags&= ~(ASN1_STRING_FLAG_BITS_LEFT|0x07);
+	signature->flags|=ASN1_STRING_FLAG_BITS_LEFT;
 err:
 	memset(&ctx,0,sizeof(ctx));
 	if (buf_in != NULL)
