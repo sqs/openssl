@@ -1,5 +1,5 @@
 /* crypto/asn1/asn1_par.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -108,6 +108,8 @@ int indent;
 		p="BOOLEAN";
 	else if (tag == V_ASN1_INTEGER)
 		p="INTEGER";
+	else if (tag == V_ASN1_ENUMERATED)
+		p="ENUMERATED";
 	else if (tag == V_ASN1_BIT_STRING)
 		p="BIT STRING";
 	else if (tag == V_ASN1_OCTET_STRING)
@@ -144,7 +146,8 @@ int indent;
 		p="GENERALSTRING";
 	else if (tag == V_ASN1_UNIVERSALSTRING)
 		p="UNIVERSALSTRING";
-
+	else if (tag == V_ASN1_BMPSTRING)
+		p="BMPSTRING";
 	else
 		p2="(unknown)";
 		
@@ -184,6 +187,7 @@ int indent;
 	int nl,hl,j,r;
 	ASN1_OBJECT *o=NULL;
 	ASN1_OCTET_STRING *os=NULL;
+	/* ASN1_BMPSTRING *bmp=NULL;*/
 
 	p= *pp;
 	tot=p+length;
@@ -264,7 +268,8 @@ int indent;
 			if (	(tag == V_ASN1_PRINTABLESTRING) ||
 				(tag == V_ASN1_T61STRING) ||
 				(tag == V_ASN1_IA5STRING) ||
-				(tag == V_ASN1_UTCTIME))
+				(tag == V_ASN1_UTCTIME) ||
+				(tag == V_ASN1_GENERALIZEDTIME))
 				{
 				if (BIO_write(bp,":",1) <= 0) goto end;
 				if ((len > 0) &&
@@ -298,6 +303,10 @@ int indent;
 						goto end;
 					}
 				BIO_printf(bp,":%d",ii);
+				}
+			else if (tag == V_ASN1_BMPSTRING)
+				{
+				/* do the BMP thang */
 				}
 			else if (tag == V_ASN1_OCTET_STRING)
 				{
@@ -363,6 +372,38 @@ int indent;
 						goto end;
 					}
 				ASN1_INTEGER_free(bs);
+				}
+			else if (tag == V_ASN1_ENUMERATED)
+				{
+				ASN1_ENUMERATED *bs;
+				int i;
+
+				opp=op;
+				bs=d2i_ASN1_ENUMERATED(NULL,&opp,len+hl);
+				if (bs != NULL)
+					{
+					if (BIO_write(bp,":",1) <= 0) goto end;
+					if (bs->type == V_ASN1_NEG_ENUMERATED)
+						if (BIO_write(bp,"-",1) <= 0)
+							goto end;
+					for (i=0; i<bs->length; i++)
+						{
+						if (BIO_printf(bp,"%02X",
+							bs->data[i]) <= 0)
+							goto end;
+						}
+					if (bs->length == 0)
+						{
+						if (BIO_write(bp,"00",2) <= 0)
+							goto end;
+						}
+					}
+				else
+					{
+					if (BIO_write(bp,"BAD ENUMERATED",11) <= 0)
+						goto end;
+					}
+				ASN1_ENUMERATED_free(bs);
 				}
 
 			if (!nl) 
