@@ -1,5 +1,5 @@
 /* crypto/asn1/t_x509.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -69,7 +69,7 @@
 #include "objects.h"
 #include "x509.h"
 
-#ifndef WIN16
+#ifndef NO_FP_API
 int X509_print_fp(fp,x)
 FILE *fp;
 X509 *x;
@@ -158,6 +158,11 @@ X509 *x;
 		(i == NID_undef)?"UNKNOWN":OBJ_nid2ln(i)) <= 0) goto err;
 
 	pkey=X509_get_pubkey(x);
+	if (pkey == NULL)
+		{
+		BIO_printf(bp,"%12sUnable to load Public Key\n","");
+		}
+	else
 #ifndef NO_RSA
 	if (pkey->type == EVP_PKEY_RSA)
 		{
@@ -175,7 +180,9 @@ X509 *x;
 		}
 	else
 #endif
-		BIO_printf(bp,"%12sDSA Public Key:\n","");
+		BIO_printf(bp,"%12sUnknown Public Key:\n","");
+
+	EVP_PKEY_free(pkey);
 
 	n=X509_get_ext_count(x);
 	if (n > 0)
@@ -304,7 +311,7 @@ ASN1_UTCTIME *tm;
 	for (i=0; i<10; i++)
 		if ((v[i] > '9') || (v[i] < '0')) goto err;
 	y= (v[0]-'0')*10+(v[1]-'0');
-	if (y < 70) y+=100;
+	if (y < 50) y+=100;
 	M= (v[2]-'0')*10+(v[3]-'0');
 	if ((M > 12) || (M < 1)) goto err;
 	d= (v[4]-'0')*10+(v[5]-'0');

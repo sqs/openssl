@@ -1,5 +1,5 @@
 /* crypto/x509/x509type.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -108,8 +108,9 @@ EVP_PKEY *pkey;
 		break;
 		}
 
-	if (EVP_PKEY_size(pkey) <= 512)
+	if (EVP_PKEY_size(pk) <= 512)
 		ret|=EVP_PKT_EXP;
+	if(pkey==NULL) EVP_PKEY_free(pk);
 	return(ret);
 	}
 
