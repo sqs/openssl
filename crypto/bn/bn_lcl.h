@@ -1,5 +1,5 @@
 /* crypto/bn/bn_lcl.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -65,42 +65,85 @@
 extern "C" {
 #endif
 
+/* Pentium pro 16,16,16,32,64 */
+/* Alpha       16,16,16,16.64 */
+#define BN_MULL_SIZE_NORMAL			(16) /* 32 */
+#define BN_MUL_RECURSIVE_SIZE_NORMAL		(16) /* 32 less than */
+#define BN_SQR_RECURSIVE_SIZE_NORMAL		(16) /* 32 */
+#define BN_MUL_LOW_RECURSIVE_SIZE_NORMAL	(32) /* 32 */
+#define BN_MONT_CTX_SET_SIZE_WORD		(64) /* 32 */
+
+#ifndef BN_MUL_COMBA
+#define bn_mul_comba8(r,a,b)	bn_mul_normal(r,a,8,b,8)
+#define bn_mul_comba4(r,a,b)	bn_mul_normal(r,a,4,b,4)
+/* This is probably faster than using the C code - I need to check */
+#define bn_sqr_comba8(r,a)	bn_mul_normal(r,a,8,a,8)
+#define bn_sqr_comba4(r,a)	bn_mul_normal(r,a,4,a,4)
+#endif
+
 /*************************************************************
  * Using the long long type
  */
 #define Lw(t)    (((BN_ULONG)(t))&BN_MASK2)
 #define Hw(t)    (((BN_ULONG)((t)>>BN_BITS2))&BN_MASK2)
 
-#define bn_fix_top(a) \
-        { \
-        BN_ULONG *fix_top_l; \
-        for (fix_top_l= &((a)->d[(a)->top-1]); (a)->top > 0; (a)->top--) \
-		if (*(fix_top_l--)) break; \
+/* These are used for internal error checking and are not normally used */
+#ifdef BN_DEBUG
+#define bn_check_top(a) \
+	{ if (((a)->top < 0) || ((a)->top > (a)->max)) \
+		{ char *nullp=NULL; *nullp='z'; } }
+#define bn_check_num(a) if ((a) < 0) { char *nullp=NULL; *nullp='z'; }
+#else
+#define bn_check_top(a)
+#define bn_check_num(a)
+#endif
+
+/* This macro is to add extra stuff for development checking */
+#ifdef BN_DEBUG
+#define	bn_set_max(r) ((r)->max=(r)->top,BN_set_flags((r),BN_FLG_STATIC_DATA))
+#else
+#define	bn_set_max(r)
+#endif
+
+/* These macros are used to 'take' a section of a bignum for read only use */
+#define bn_set_low(r,a,n) \
+	{ \
+	(r)->top=((a)->top > (n))?(n):(a)->top; \
+	(r)->d=(a)->d; \
+	(r)->neg=(a)->neg; \
+	(r)->flags|=BN_FLG_STATIC_DATA; \
+	bn_set_max(r); \
 	}
 
-#define bn_expand(n,b) ((((b)/BN_BITS2) <= (n)->max)?(n):bn_expand2((n),(b)))
+#define bn_set_high(r,a,n) \
+	{ \
+	if ((a)->top > (n)) \
+		{ \
+		(r)->top=(a)->top-n; \
+		(r)->d= &((a)->d[n]); \
+		} \
+	else \
+		(r)->top=0; \
+	(r)->neg=(a)->neg; \
+	(r)->flags|=BN_FLG_STATIC_DATA; \
+	bn_set_max(r); \
+	}
+
+/* #define bn_expand(n,b) ((((b)/BN_BITS2) <= (n)->max)?(n):bn_expand2((n),(b))) */
 
 #ifdef BN_LLONG
 #define mul_add(r,a,w,c) { \
 	BN_ULLONG t; \
 	t=(BN_ULLONG)w * (a) + (r) + (c); \
-	(r)=Lw(t); \
+	(r)= Lw(t); \
 	(c)= Hw(t); \
 	}
 
 #define mul(r,a,w,c) { \
 	BN_ULLONG t; \
 	t=(BN_ULLONG)w * (a) + (c); \
-	(r)=Lw(t); \
+	(r)= Lw(t); \
 	(c)= Hw(t); \
-	}
-
-#define bn_mul_words(r1,r2,a,b) \
-	{ \
-	BN_ULLONG t; \
-	t=(BN_ULLONG)(a)*(b); \
-	r1=Lw(t); \
-	r2=Hw(t); \
 	}
 
 #else
@@ -126,10 +169,10 @@ extern "C" {
 	lt=(bl)*(lt); \
 	m1=(bl)*(ht); \
 	ht =(bh)*(ht); \
-	m+=m1; if ((m&BN_MASK2) < m1) ht+=L2HBITS(1L); \
+	m=(m+m1)&BN_MASK2; if (m < m1) ht+=L2HBITS(1L); \
 	ht+=HBITS(m); \
 	m1=L2HBITS(m); \
-	lt+=m1; if ((lt&BN_MASK2) < m1) ht++; \
+	lt=(lt+m1)&BN_MASK2; if (lt < m1) ht++; \
 	(l)=lt; \
 	(h)=ht; \
 	}
@@ -146,7 +189,7 @@ extern "C" {
 	h*=h; \
 	h+=(m&BN_MASK2h1)>>(BN_BITS4-1); \
 	m =(m&BN_MASK2l)<<(BN_BITS4+1); \
-	l+=m; if ((l&BN_MASK2) < m) h++; \
+	l=(l+m)&BN_MASK2; if (l < m) h++; \
 	(lo)=l; \
 	(ho)=h; \
 	}
@@ -160,11 +203,11 @@ extern "C" {
 	mul64(l,h,(bl),(bh)); \
  \
 	/* non-multiply part */ \
-	l+=(c); if ((l&BN_MASK2) < (c)) h++; \
+	l=(l+(c))&BN_MASK2; if (l < (c)) h++; \
 	(c)=(r); \
-	l+=(c); if ((l&BN_MASK2) < (c)) h++; \
+	l=(l+(c))&BN_MASK2; if (l < (c)) h++; \
 	(c)=h&BN_MASK2; \
-	(r)=l&BN_MASK2; \
+	(r)=l; \
 	}
 
 #define mul(r,a,bl,bh,c) { \
@@ -181,31 +224,33 @@ extern "C" {
 	(r)=l&BN_MASK2; \
 	}
 
-#define bn_mul_words(r1,r2,a,b) \
-	{ \
-	BN_ULONG l,h,bl,bh; \
- \
-	h=(a); \
-	l=LBITS(h); \
-	h=HBITS(h); \
-	bh=(b); \
-	bl=LBITS(bh); \
-	bh=HBITS(bh); \
- \
-	mul64(l,h,bl,bh); \
- \
-	(r1)=l; \
-	(r2)=h; \
-	}
 #endif
+
+extern int bn_limit_bits;
+extern int bn_limit_num;        /* (1<<bn_limit_bits) */
+/* Recursive 'low' limit */
+extern int bn_limit_bits_low;
+extern int bn_limit_num_low;    /* (1<<bn_limit_bits_low) */
+/* Do modified 'high' part calculation' */
+extern int bn_limit_bits_high;
+extern int bn_limit_num_high;   /* (1<<bn_limit_bits_high) */
+extern int bn_limit_bits_mont;
+extern int bn_limit_num_mont;   /* (1<<bn_limit_bits_mont) */
 
 #ifndef NOPROTO
 
 BIGNUM *bn_expand2(BIGNUM *b, int bits);
 
+#ifdef X86_ASM
+void bn_add_words(BN_ULONG *r,BN_ULONG *a,int num);
+#endif
+
 #else
 
 BIGNUM *bn_expand2();
+#ifdef X86_ASM
+BN_ULONG bn_add_words();
+#endif
 
 #endif
 
@@ -214,3 +259,8 @@ BIGNUM *bn_expand2();
 #endif
 
 #endif
+
+void bn_mul_low_recursive(BN_ULONG *r,BN_ULONG *a,BN_ULONG *b,int n2,BN_ULONG *t);
+void bn_mul_high(BN_ULONG *r,BN_ULONG *a,BN_ULONG *b,BN_ULONG *l,int n2, BN_ULONG *t);
+
+
