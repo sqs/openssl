@@ -1,5 +1,5 @@
 /* apps/dsaparam.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -80,10 +80,11 @@
  * -text
  * -C
  * -noout
+ * -genkey
  */
 
 #ifndef NOPROTO
-static void MS_CALLBACK dsa_cb(int p, int n);
+static void MS_CALLBACK dsa_cb(int p, int n, char *arg);
 #else
 static void MS_CALLBACK dsa_cb();
 #endif
@@ -97,14 +98,14 @@ char **argv;
 	BIO *in=NULL,*out=NULL;
 	int informat,outformat,noout=0,C=0,ret=1;
 	char *infile,*outfile,*prog,*inrand=NULL;
-	int numbits= -1,num;
+	int numbits= -1,num,genkey=0;
 	char buffer[200],*randfile=NULL;
 
 	apps_startup();
 
 	if (bio_err == NULL)
 		if ((bio_err=BIO_new(BIO_s_file())) != NULL)
-			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE);
+			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE|BIO_FP_TEXT);
 
 	infile=NULL;
 	outfile=NULL;
@@ -140,6 +141,8 @@ char **argv;
 			text=1;
 		else if (strcmp(*argv,"-C") == 0)
 			C=1;
+		else if (strcmp(*argv,"-genkey") == 0)
+			genkey=1;
 		else if (strcmp(*argv,"-rand") == 0)
 			{
 			if (--argc < 1) goto bad;
@@ -169,7 +172,7 @@ bad:
 		BIO_printf(bio_err,"where options are\n");
 		BIO_printf(bio_err," -inform arg   input format - one of DER TXT PEM\n");
 		BIO_printf(bio_err," -outform arg  output format - one of DER TXT PEM\n");
-		BIO_printf(bio_err," -in arg       inout file\n");
+		BIO_printf(bio_err," -in arg       input file\n");
 		BIO_printf(bio_err," -out arg      output file\n");
 		BIO_printf(bio_err," -text         check the DSA parameters\n");
 		BIO_printf(bio_err," -C            Output C code\n");
@@ -217,7 +220,8 @@ bad:
 
 		BIO_printf(bio_err,"Generating DSA parameters, %d bit long prime\n",num);
 	        BIO_printf(bio_err,"This could take some time\n");
-	        dsa=DSA_generate_parameters(num,NULL,0,NULL,NULL,dsa_cb);
+	        dsa=DSA_generate_parameters(num,NULL,0,NULL,NULL,
+			dsa_cb,(char *)bio_err);
 		}
 	else if	(informat == FORMAT_ASN1)
 		dsa=d2i_DSAparams_bio(in,NULL);
@@ -314,6 +318,22 @@ bad:
 			goto end;
 			}
 		}
+	if (genkey)
+		{
+		DSA *dsakey;
+
+		if ((dsakey=DSAparams_dup(dsa)) == NULL) goto end;
+		if (!DSA_generate_key(dsakey)) goto end;
+		if 	(outformat == FORMAT_ASN1)
+			i=i2d_DSAPrivateKey_bio(out,dsakey);
+		else if (outformat == FORMAT_PEM)
+			i=PEM_write_bio_DSAPrivateKey(out,dsakey,NULL,NULL,0,NULL);
+		else	{
+			BIO_printf(bio_err,"bad output format specified for outfile\n");
+			goto end;
+			}
+		DSA_free(dsakey);
+		}
 	ret=0;
 end:
 	if (in != NULL) BIO_free(in);
@@ -322,9 +342,10 @@ end:
 	EXIT(ret);
 	}
 
-static void MS_CALLBACK dsa_cb(p, n)
+static void MS_CALLBACK dsa_cb(p, n, arg)
 int p;
 int n;
+char *arg;
 	{
 	char c='*';
 
@@ -332,8 +353,8 @@ int n;
 	if (p == 1) c='+';
 	if (p == 2) c='*';
 	if (p == 3) c='\n';
-	BIO_write(bio_err,&c,1);
-	BIO_flush(bio_err);
+	BIO_write((BIO *)arg,&c,1);
+	BIO_flush((BIO *)arg);
 #ifdef LINT
 	p=n;
 #endif
