@@ -1,5 +1,5 @@
 /* crypto/dh/dh.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,9 +63,9 @@
 extern "C" {
 #endif
 
-#ifndef HEADER_BN_H
-#define BIGNUM 		char
-#endif
+#include "bn.h"
+	
+#define DH_FLAG_CACHE_MONT_P	0x01
 
 typedef struct dh_st
 	{
@@ -78,6 +78,9 @@ typedef struct dh_st
 	int length; /* optional */
 	BIGNUM *pub_key;	/* y */
 	BIGNUM *priv_key;	/* x */
+
+	int flags;
+	char *method_mont_p;
 	} DH;
 
 #define DH_GENERATOR_2		2
@@ -106,13 +109,13 @@ DH *	DH_new(void);
 void	DH_free(DH *dh);
 int	DH_size(DH *dh);
 DH *	DH_generate_parameters(int prime_len,int generator,
-		void (*callback)(int,int));
+		void (*callback)(int,int,char *),char *cb_arg);
 int	DH_check(DH *dh,int *codes);
 int	DH_generate_key(DH *dh);
 int	DH_compute_key(unsigned char *key,BIGNUM *pub_key,DH *dh);
 DH *	d2i_DHparams(DH **a,unsigned char **pp, long length);
 int	i2d_DHparams(DH *a,unsigned char **pp);
-#ifndef WIN16
+#ifndef NO_FP_API
 int	DHparams_print_fp(FILE *fp, DH *x);
 #endif
 #ifdef HEADER_BIO_H
@@ -133,7 +136,7 @@ int	DH_generate_key();
 int	DH_compute_key();
 DH *	d2i_DHparams();
 int	i2d_DHparams();
-#ifndef WIN16
+#ifndef NO_FP_API
 int	DHparams_print_fp();
 #endif
 int	DHparams_print();
