@@ -10,7 +10,7 @@ INCLUDES=
 CFLAG=-g
 INSTALLTOP=/usr/local/ssl
 MAKE=           make -f Makefile.ssl
-MAKEDEPEND=     makedepend -f Makefile.ssl
+MAKEDEPEND=	$(TOP)/util/domd $(TOP)
 MAKEFILE=       Makefile.ssl
 AR=             ar r
 
@@ -59,7 +59,7 @@ asm/rm86-out.o: asm/rm86unix.cpp
 
 # bsdi
 asm/rm86bsdi.o: asm/rm86unix.cpp
-	$(CPP) -DBSDI asm/rm86unix.cpp | as -o asm/rm86bsdi.o
+	$(CPP) -DBSDI asm/rm86unix.cpp | sed 's/ :/:/' | as -o asm/rm86bsdi.o
 
 asm/rm86unix.cpp:
 	(cd asm; perl rmd-586.pl cpp >rm86unix.cpp)
@@ -102,3 +102,5 @@ clean:
 errors:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
+
+rmd_dgst.o: ripemd.h rmd_locl.h rmdconst.h ripemd.h rmd_locl.h rmdconst.h
