@@ -1,5 +1,5 @@
 /* crypto/bn/bn_add.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -66,8 +66,10 @@ BIGNUM *r;
 BIGNUM *a;
 BIGNUM *b;
 	{
-	int i;
 	BIGNUM *tmp;
+
+	bn_check_top(a);
+	bn_check_top(b);
 
 	/*  a +  b	a+b
 	 *  a + -b	a-b
@@ -81,17 +83,15 @@ BIGNUM *b;
 			{ tmp=a; a=b; b=tmp; }
 
 		/* we are now a - b */
-		if (bn_expand(r,((a->top > b->top)?a->top:b->top)*BN_BITS2)
-			== NULL) return(0);
 
 		if (BN_ucmp(a,b) < 0)
 			{
-			bn_qsub(r,b,a);
+			if (!BN_usub(r,b,a)) return(0);
 			r->neg=1;
 			}
 		else
 			{
-			bn_qsub(r,a,b);
+			if (!BN_usub(r,a,b)) return(0);
 			r->neg=0;
 			}
 		return(1);
@@ -102,60 +102,57 @@ BIGNUM *b;
 	else
 		r->neg=0;
 
-	i=(a->top > b->top);
-	if (bn_expand(r,(((i)?a->top:b->top)+1)*BN_BITS2) == NULL) return(0);
-
-	if (i)
-		bn_qadd(r,a,b);
-	else
-		bn_qadd(r,b,a);
+	if (!BN_uadd(r,a,b)) return(0);
 	return(1);
 	}
 
 /* unsigned add of b to a, r must be large enough */
-void bn_qadd(r,a,b)
+int BN_uadd(r,a,b)
 BIGNUM *r;
 BIGNUM *a;
 BIGNUM *b;
 	{
 	register int i;
 	int max,min;
-	BN_ULONG *ap,*bp,*rp,carry,t1,t2;
+	BN_ULONG *ap,*bp,*rp,carry,t1;
+	BIGNUM *tmp;
 
+	bn_check_top(a);
+	bn_check_top(b);
+
+	if (a->top < b->top)
+		{ tmp=a; a=b; b=tmp; }
 	max=a->top;
 	min=b->top;
+
+	if (bn_wexpand(r,max+1) == NULL)
+		return(0);
+
 	r->top=max;
+
 
 	ap=a->d;
 	bp=b->d;
 	rp=r->d;
 	carry=0;
-	for (i=0; i<min; i++)
-		{
-		t1= *(ap++);
-		t2= *(bp++);
-		if (carry)
-			{
-			carry=(t2 >= ((~t1)&BN_MASK2));
-			t2=(t1+t2+1)&BN_MASK2;
-			}
-		else
-			{
-			t2=(t1+t2)&BN_MASK2;
-			carry=(t2 < t1);
-			}
-		*(rp++)=t2;
-		}
+
+	carry=bn_add_words(rp,ap,bp,min);
+	rp+=min;
+	ap+=min;
+	bp+=min;
+	i=min;
+
 	if (carry)
 		{
 		while (i < max)
 			{
-			t1= *(ap++);
-			t2=(t1+1)&BN_MASK2;
-			*(rp++)=t2;
-			carry=(t2 < t1);
 			i++;
-			if (!carry) break;
+			t1= *(ap++);
+			if ((*(rp++)=(t1+1)&BN_MASK2) >= t1)
+				{
+				carry=0;
+				break;
+				}
 			}
 		if ((i >= max) && carry)
 			{
@@ -163,8 +160,163 @@ BIGNUM *b;
 			r->top++;
 			}
 		}
-	for (; i<max; i++)
-		*(rp++)= *(ap++);
+	if (rp != ap)
+		{
+		for (; i<max; i++)
+			*(rp++)= *(ap++);
+		}
 	/* memcpy(rp,ap,sizeof(*ap)*(max-i));*/
+	return(1);
+	}
+
+/* unsigned subtraction of b from a, a must be larger than b. */
+int BN_usub(r, a, b)
+BIGNUM *r;
+BIGNUM *a;
+BIGNUM *b;
+	{
+	int max,min;
+#if 0
+	int ret=1;
+#endif
+	register BN_ULONG t1,t2,*ap,*bp,*rp;
+	int i,carry;
+#if defined(IRIX_CC_BUG) && !defined(LINT)
+	int dummy;
+#endif
+
+	bn_check_top(a);
+	bn_check_top(b);
+
+	if (a->top < b->top) /* hmm... should not be happening */
+		{
+		BNerr(BN_F_BN_USUB,BN_R_ARG2_LT_ARG3);
+		return(0);
+		}
+
+	max=a->top;
+	min=b->top;
+	if (bn_wexpand(r,max) == NULL) return(0);
+
+	ap=a->d;
+	bp=b->d;
+	rp=r->d;
+
+#if 1
+	carry=0;
+	for (i=0; i<min; i++)
+		{
+		t1= *(ap++);
+		t2= *(bp++);
+		if (carry)
+			{
+			carry=(t1 <= t2);
+			t1=(t1-t2-1)&BN_MASK2;
+			}
+		else
+			{
+			carry=(t1 < t2);
+			t1=(t1-t2)&BN_MASK2;
+			}
+#if defined(IRIX_CC_BUG) && !defined(LINT)
+		dummy=t1;
+#endif
+		*(rp++)=t1&BN_MASK2;
+		}
+#else
+	carry=bn_sub_words(rp,ap,bp,min);
+	ap+=min;
+	bp+=min;
+	rp+=min;
+	i=min;
+#endif
+	if (carry) /* subtracted */
+		{
+		while (i < max)
+			{
+			i++;
+			t1= *(ap++);
+			t2=(t1-1)&BN_MASK2;
+			*(rp++)=t2;
+			if (t1 > t2) break;
+			}
+		}
+#if 0
+	memcpy(rp,ap,sizeof(*rp)*(max-i));
+#else
+	if (rp != ap)
+		{
+		for (;;)
+			{
+			if (i++ >= max) break;
+			rp[0]=ap[0];
+			if (i++ >= max) break;
+			rp[1]=ap[1];
+			if (i++ >= max) break;
+			rp[2]=ap[2];
+			if (i++ >= max) break;
+			rp[3]=ap[3];
+			rp+=4;
+			ap+=4;
+			}
+		}
+#endif
+
+	r->top=max;
+	bn_fix_top(r);
+	return(1);
+	}
+
+int BN_sub(r, a, b)
+BIGNUM *r;
+BIGNUM *a;
+BIGNUM *b;
+	{
+	int max;
+	int add=0,neg=0;
+	BIGNUM *tmp;
+
+	bn_check_top(a);
+	bn_check_top(b);
+
+	/*  a -  b	a-b
+	 *  a - -b	a+b
+	 * -a -  b	-(a+b)
+	 * -a - -b	b-a
+	 */
+	if (a->neg)
+		{
+		if (b->neg)
+			{ tmp=a; a=b; b=tmp; }
+		else
+			{ add=1; neg=1; }
+		}
+	else
+		{
+		if (b->neg) { add=1; neg=0; }
+		}
+
+	if (add)
+		{
+		if (!BN_uadd(r,a,b)) return(0);
+		r->neg=neg;
+		return(1);
+		}
+
+	/* We are actually doing a - b :-) */
+
+	max=(a->top > b->top)?a->top:b->top;
+	if (bn_wexpand(r,max) == NULL) return(0);
+	if (BN_ucmp(a,b) < 0)
+		{
+		if (!BN_usub(r,b,a)) return(0);
+		r->neg=1;
+		}
+	else
+		{
+		if (!BN_usub(r,a,b)) return(0);
+		r->neg=0;
+		}
+	return(1);
 	}
 
