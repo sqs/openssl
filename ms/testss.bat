@@ -1,6 +1,6 @@
-echo=off
+echo=on
 
-set ssleay=..\out\ssleay
+rem set ssleay=..\out\ssleay
 set ssleay=%1
 
 set reqcmd=%ssleay% req
