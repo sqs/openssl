@@ -1,5 +1,5 @@
 /* crypto/bn/bn_rand.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -85,7 +85,7 @@ int bottom;
 
 	/* make a random number and set the top and bottom bits */
 	time(&tim);
-	RAND_seed((unsigned char *)&tim,sizeof(tim));
+	RAND_seed(&tim,sizeof(tim));
 
 	RAND_bytes(buf,(int)bytes);
 	if (top)
