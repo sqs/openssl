@@ -1,5 +1,5 @@
 /* crypto/asn1/p7_lib.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -179,6 +179,7 @@ long length;
 			V_ASN1_CONTEXT_SPECIFIC|0))
 			{
 			c.error=ASN1_R_BAD_PKCS7_CONTENT;
+			c.line=__LINE__;
 			goto err;
 			}
 
@@ -187,7 +188,7 @@ long length;
 		c.q=c.p;
 		Tinf=ASN1_get_object(&c.p,&Tlen,&Ttag,&Tclass,
 			(c.inf & 1)?(length+ *pp-c.q):c.slen);
-		if (Tinf & 0x80) goto err;
+		if (Tinf & 0x80) { c.line=__LINE__; goto err; }
 		c.slen-=(c.p-c.q);
 
 		switch (OBJ_obj2nid(ret->type))
@@ -215,14 +216,16 @@ long length;
 			break;
 		default:
 			c.error=ASN1_R_BAD_PKCS7_TYPE;
+			c.line=__LINE__;
 			goto err;
-			break;
+			/* break; */
 			}
 		if (Tinf == (1|V_ASN1_CONSTRUCTED))
 			{
 			if (!ASN1_check_infinite_end(&c.p,c.slen))
 				{
-				c.error=ASN1_R_MISSING_EOS;
+				c.error=ERR_R_MISSING_ASN1_EOS;
+				c.line=__LINE__;
 				goto err;
 				}
 			}
@@ -236,9 +239,10 @@ long length;
 PKCS7 *PKCS7_new()
 	{
 	PKCS7 *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,PKCS7);
-	ret->type=ASN1_OBJECT_new();
+	ret->type=OBJ_nid2obj(NID_undef);
 	ret->asn1=NULL;
 	ret->length=0;
 	ret->detached=0;
@@ -263,6 +267,9 @@ PKCS7 *a;
 void PKCS7_content_free(a)
 PKCS7 *a;
 	{
+	if(a == NULL)
+	    return;
+
 	if (a->asn1 != NULL) Free((char *)a->asn1);
 
 	if (a->d.ptr != NULL)
