@@ -1,5 +1,5 @@
 /* crypto/cversion.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -66,7 +66,7 @@ char *SSLeay_version(t)
 int t;
 	{
 	if (t == SSLEAY_VERSION)
-		return("SSLeay 0.8.1b 29-Jun-1998");
+		return("SSLeay 0.9.1c 22-Dec-1998");
 	if (t == SSLEAY_BUILT_ON)
 		{
 #ifdef DATE
@@ -87,6 +87,17 @@ int t;
 		return(buf);
 #else
 		return("C flags not available");
+#endif
+		}
+	if (t == SSLEAY_PLATFORM)
+		{
+#ifdef PLATFORM
+		static char buf[sizeof(PLATFORM)+10];
+
+		sprintf(buf,"Platform:%s",PLATFORM);
+		return(buf);
+#else
+		return("Platform information not available");
 #endif
 		}
 	return("not available");

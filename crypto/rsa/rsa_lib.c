@@ -1,5 +1,5 @@
 /* crypto/rsa/rsa_lib.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -57,13 +57,17 @@
  */
 
 #include <stdio.h>
+#include "crypto.h"
 #include "cryptlib.h"
+#include "lhash.h"
 #include "bn.h"
 #include "rsa.h"
 
-char *RSA_version="RSA part of SSLeay 0.8.1b 29-Jun-1998";
+char *RSA_version="RSA part of SSLeay 0.9.1c 22-Dec-1998";
 
 static RSA_METHOD *default_RSA_meth=NULL;
+static int rsa_meth_num=0;
+static STACK *rsa_meth=NULL;
 
 RSA *RSA_new()
 	{
@@ -112,12 +116,19 @@ RSA_METHOD *meth;
 	ret->dmq1=NULL;
 	ret->iqmp=NULL;
 	ret->references=1;
-	ret->app_data=NULL;
+	ret->method_mod_n=NULL;
+	ret->method_mod_p=NULL;
+	ret->method_mod_q=NULL;
+	ret->blinding=NULL;
+	ret->bignum_data=NULL;
+	ret->flags=ret->meth->flags;
 	if ((ret->meth->init != NULL) && !ret->meth->init(ret))
 		{
 		Free(ret);
 		ret=NULL;
 		}
+	else
+		CRYPTO_new_ex_data(rsa_meth,(char *)ret,&ret->ex_data);
 	return(ret);
 	}
 
@@ -129,6 +140,9 @@ RSA *r;
 	if (r == NULL) return;
 
 	i=CRYPTO_add(&r->references,-1,CRYPTO_LOCK_RSA);
+#ifdef REF_PRINT
+	REF_PRINT("RSA",r);
+#endif
 	if (i > 0) return;
 #ifdef REF_CHECK
 	if (i < 0)
@@ -137,6 +151,8 @@ RSA *r;
 		abort();
 		}
 #endif
+
+	CRYPTO_free_ex_data(rsa_meth,(char *)r,&r->ex_data);
 
 	if (r->meth->finish != NULL)
 		r->meth->finish(r);
@@ -149,7 +165,36 @@ RSA *r;
 	if (r->dmp1 != NULL) BN_clear_free(r->dmp1);
 	if (r->dmq1 != NULL) BN_clear_free(r->dmq1);
 	if (r->iqmp != NULL) BN_clear_free(r->iqmp);
+	if (r->blinding != NULL) BN_BLINDING_free(r->blinding);
+	if (r->bignum_data != NULL) Free_locked(r->bignum_data);
 	Free(r);
+	}
+
+int RSA_get_ex_new_index(argl,argp,new_func,dup_func,free_func)
+long argl;
+char *argp;
+int (*new_func)();
+int (*dup_func)();
+void (*free_func)();
+        {
+	rsa_meth_num++;
+	return(CRYPTO_get_ex_new_index(rsa_meth_num-1,
+		&rsa_meth,argl,argp,new_func,dup_func,free_func));
+        }
+
+int RSA_set_ex_data(r,idx,arg)
+RSA *r;
+int idx;
+char *arg;
+	{
+	return(CRYPTO_set_ex_data(&r->ex_data,idx,arg));
+	}
+
+char *RSA_get_ex_data(r,idx)
+RSA *r;
+int idx;
+	{
+	return(CRYPTO_get_ex_data(&r->ex_data,idx));
 	}
 
 int RSA_size(r)
@@ -196,5 +241,103 @@ RSA *rsa;
 int padding;
 	{
 	return(rsa->meth->rsa_pub_dec(flen, from, to, rsa, padding));
+	}
+
+int RSA_flags(r)
+RSA *r;
+	{
+	return((r == NULL)?0:r->meth->flags);
+	}
+
+void RSA_blinding_off(rsa)
+RSA *rsa;
+	{
+	if (rsa->blinding != NULL)
+		{
+		BN_BLINDING_free(rsa->blinding);
+		rsa->blinding=NULL;
+		}
+	rsa->flags&= ~RSA_FLAG_BLINDING;
+	}
+
+int RSA_blinding_on(rsa,p_ctx)
+RSA *rsa;
+BN_CTX *p_ctx;
+	{
+	BIGNUM *A,*Ai;
+	BN_CTX *ctx;
+	int ret=0;
+
+	if (p_ctx == NULL)
+		{
+		if ((ctx=BN_CTX_new()) == NULL) goto err;
+		}
+	else
+		ctx=p_ctx;
+
+	if (rsa->blinding != NULL)
+		BN_BLINDING_free(rsa->blinding);
+
+	A= &(ctx->bn[0]);
+	ctx->tos++;
+	if (!BN_rand(A,BN_num_bits(rsa->n)-1,1,0)) goto err;
+	if ((Ai=BN_mod_inverse(NULL,A,rsa->n,ctx)) == NULL) goto err;
+
+	if (!rsa->meth->bn_mod_exp(A,A,rsa->e,rsa->n,ctx,
+		(char *)rsa->method_mod_n)) goto err;
+	rsa->blinding=BN_BLINDING_new(A,Ai,rsa->n);
+	ctx->tos--;
+	rsa->flags|=RSA_FLAG_BLINDING;
+	BN_free(Ai);
+	ret=1;
+err:
+	if (ctx != p_ctx) BN_CTX_free(ctx);
+	return(ret);
+	}
+
+int RSA_memory_lock(r)
+RSA *r;
+	{
+	int i,j,k,off;
+	char *p;
+	BIGNUM *bn,**t[6],*b;
+	BN_ULONG *ul;
+
+	if (r->d == NULL) return(1);
+	t[0]= &r->d;
+	t[1]= &r->p;
+	t[2]= &r->q;
+	t[3]= &r->dmp1;
+	t[4]= &r->dmq1;
+	t[5]= &r->iqmp;
+	k=sizeof(BIGNUM)*6;
+	off=k/sizeof(BN_ULONG)+1;
+	j=1;
+	for (i=0; i<6; i++)
+		j+= (*t[i])->top;
+	if ((p=Malloc_locked((off+j)*sizeof(BN_ULONG))) == NULL)
+		{
+		RSAerr(RSA_F_MEMORY_LOCK,ERR_R_MALLOC_FAILURE);
+		return(0);
+		}
+	bn=(BIGNUM *)p;
+	ul=(BN_ULONG *)&(p[off]);
+	for (i=0; i<6; i++)
+		{
+		b= *(t[i]);
+		*(t[i])= &(bn[i]);
+		memcpy((char *)&(bn[i]),(char *)b,sizeof(BIGNUM));
+		bn[i].flags=BN_FLG_STATIC_DATA;
+		bn[i].d=ul;
+		memcpy((char *)ul,b->d,sizeof(BN_ULONG)*b->top);
+		ul+=b->top;
+		BN_clear_free(b);
+		}
+	
+	/* I should fix this so it can still be done */
+	r->flags&= ~(RSA_FLAG_CACHE_PRIVATE|RSA_FLAG_CACHE_PUBLIC);
+
+	r->bignum_data=p;
+	return(1);
 	}
 

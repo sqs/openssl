@@ -1,5 +1,5 @@
 /* ssl/ssl_cert.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,6 +62,18 @@
 #include "pem.h"
 #include "ssl_locl.h"
 
+int SSL_get_ex_data_X509_STORE_CTX_idx()
+	{
+	static int ssl_x509_store_ctx_idx= -1;
+
+	if (ssl_x509_store_ctx_idx < 0)
+		{
+		ssl_x509_store_ctx_idx=X509_STORE_CTX_get_ex_new_index(
+			0,"SSL for verify callback",NULL,NULL,NULL);
+		}
+	return(ssl_x509_store_ctx_idx);
+	}
+
 CERT *ssl_cert_new()
 	{
 	CERT *ret;
@@ -94,6 +106,9 @@ CERT *c;
 	int i;
 
 	i=CRYPTO_add(&c->references,-1,CRYPTO_LOCK_SSL_CERT);
+#ifdef REF_PRINT
+	REF_PRINT("CERT",c);
+#endif
 	if (i > 0) return;
 #ifdef REF_CHECK
 	if (i < 0)
@@ -147,15 +162,24 @@ STACK *sk;
 
 	x=(X509 *)sk_value(sk,0);
 	X509_STORE_CTX_init(&ctx,s->ctx->cert_store,x,sk);
-	X509_STORE_CTX_set_app_data(&ctx,(char *)s);
+	X509_STORE_CTX_set_ex_data(&ctx,SSL_get_ex_data_X509_STORE_CTX_idx(),
+		(char *)s);
 
 	if (s->ctx->app_verify_callback != NULL)
 		i=s->ctx->app_verify_callback(&ctx);
 	else
+		{
+#ifndef NO_X509_VERIFY
 		i=X509_verify_cert(&ctx);
+#else
+		i=0;
+		ctx.error=X509_V_ERR_APPLICATION_VERIFICATION;
+		SSLerr(SSL_F_SSL_VERIFY_CERT_CHAIN,SSL_R_NO_VERIFY_CALLBACK);
+#endif
+		}
 
-	X509_STORE_CTX_cleanup(&ctx);
 	s->verify_result=ctx.error;
+	X509_STORE_CTX_cleanup(&ctx);
 
 	return(i);
 	}
@@ -215,7 +239,8 @@ SSL *s;
 	{
 	if (s->type == SSL_ST_CONNECT)
 		{ /* we are in the client */
-		if ((s->version == 3) && (s->s3 != NULL))
+		if (((s->version>>8) == SSL3_VERSION_MAJOR) &&
+			(s->s3 != NULL))
 			return(s->s3->tmp.ca_names);
 		else
 			return(NULL);
@@ -270,6 +295,7 @@ X509_NAME **a,**b;
 	return(X509_NAME_cmp(*a,*b));
 	}
 
+#ifndef NO_STDIO
 STACK *SSL_load_client_CA_file(file)
 char *file;
 	{
@@ -280,11 +306,9 @@ char *file;
 
 	ret=sk_new(NULL);
 	sk=sk_new(name_cmp);
-#ifdef WIN16
-	in=BIO_new(BIO_s_file_internal_w16());
-#else
-	in=BIO_new(BIO_s_file());
-#endif
+
+	in=BIO_new(BIO_s_file_internal());
+
 	if ((ret == NULL) || (sk == NULL) || (in == NULL))
 		{
 		SSLerr(SSL_F_SSL_LOAD_CLIENT_CA_FILE,ERR_R_MALLOC_FAILURE);
@@ -322,5 +346,5 @@ err:
 	if (x != NULL) X509_free(x);
 	return(ret);
 	}
-
+#endif
 

@@ -60,10 +60,12 @@
 #include "bio.h"
 
 /* BEGIN ERROR CODES */
+#ifndef NO_ERR
 static ERR_STRING_DATA BIO_str_functs[]=
 	{
 {ERR_PACK(0,BIO_F_ACPT_STATE,0),	"ACPT_STATE"},
 {ERR_PACK(0,BIO_F_BIO_ACCEPT,0),	"BIO_accept"},
+{ERR_PACK(0,BIO_F_BIO_BER_GET_HEADER,0),	"BIO_BER_GET_HEADER"},
 {ERR_PACK(0,BIO_F_BIO_CTRL,0),	"BIO_ctrl"},
 {ERR_PACK(0,BIO_F_BIO_GETS,0),	"BIO_gets"},
 {ERR_PACK(0,BIO_F_BIO_GET_ACCEPT_SOCKET,0),	"BIO_get_accept_socket"},
@@ -75,9 +77,11 @@ static ERR_STRING_DATA BIO_str_functs[]=
 {ERR_PACK(0,BIO_F_BIO_READ,0),	"BIO_read"},
 {ERR_PACK(0,BIO_F_BIO_SOCK_INIT,0),	"BIO_sock_init"},
 {ERR_PACK(0,BIO_F_BIO_WRITE,0),	"BIO_write"},
+{ERR_PACK(0,BIO_F_BUFFER_CTRL,0),	"BUFFER_CTRL"},
 {ERR_PACK(0,BIO_F_CONN_STATE,0),	"CONN_STATE"},
 {ERR_PACK(0,BIO_F_FILE_CTRL,0),	"FILE_CTRL"},
 {ERR_PACK(0,BIO_F_MEM_WRITE,0),	"MEM_WRITE"},
+{ERR_PACK(0,BIO_F_SSL_NEW,0),	"SSL_NEW"},
 {ERR_PACK(0,BIO_F_WSASTARTUP,0),	"WSASTARTUP"},
 {0,NULL},
 	};
@@ -93,12 +97,14 @@ static ERR_STRING_DATA BIO_str_reasons[]=
 {BIO_R_ERROR_SETTING_NBIO_ON_ACCEPT_SOCKET,"error setting nbio on accept socket"},
 {BIO_R_GETHOSTBYNAME_ADDR_IS_NOT_AF_INET ,"gethostbyname addr is not af inet"},
 {BIO_R_INVALID_IP_ADDRESS                ,"invalid ip address"},
+{BIO_R_KEEPALIVE                         ,"keepalive"},
 {BIO_R_NBIO_CONNECT_ERROR                ,"nbio connect error"},
 {BIO_R_NO_ACCEPT_PORT_SPECIFIED          ,"no accept port specified"},
 {BIO_R_NO_HOSTHNAME_SPECIFIED            ,"no hosthname specified"},
 {BIO_R_NO_PORT_DEFINED                   ,"no port defined"},
 {BIO_R_NO_PORT_SPECIFIED                 ,"no port specified"},
 {BIO_R_NULL_PARAMETER                    ,"null parameter"},
+{BIO_R_TAG_MISMATCH                      ,"tag mismatch"},
 {BIO_R_UNABLE_TO_BIND_SOCKET             ,"unable to bind socket"},
 {BIO_R_UNABLE_TO_CREATE_SOCKET           ,"unable to create socket"},
 {BIO_R_UNABLE_TO_LISTEN_SOCKET           ,"unable to listen socket"},
@@ -108,6 +114,8 @@ static ERR_STRING_DATA BIO_str_reasons[]=
 {0,NULL},
 	};
 
+#endif
+
 void ERR_load_BIO_strings()
 	{
 	static int init=1;
@@ -115,7 +123,10 @@ void ERR_load_BIO_strings()
 	if (init)
 		{
 		init=0;
+#ifndef NO_ERR
 		ERR_load_strings(ERR_LIB_BIO,BIO_str_functs);
 		ERR_load_strings(ERR_LIB_BIO,BIO_str_reasons);
+#endif
+
 		}
 	}

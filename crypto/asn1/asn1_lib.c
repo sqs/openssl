@@ -1,5 +1,5 @@
 /* crypto/asn1/asn1_lib.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -69,7 +69,7 @@ static int asn1_get_length();
 static void asn1_put_length();
 #endif
 
-char *ASN1_version="ASN1 part of SSLeay 0.8.1b 29-Jun-1998";
+char *ASN1_version="ASN.1 part of SSLeay 0.9.1c 22-Dec-1998";
 
 int ASN1_check_infinite_end(p,len)
 unsigned char **p;
@@ -130,11 +130,13 @@ long omax;
 	*pclass=xclass;
 	if (!asn1_get_length(&p,&inf,plength,(int)max)) goto err;
 
-#ifdef undef
-	fprintf(stderr,"p=%d + *plength=%d > omax=%d + *pp=%d  (%d > %d)\n", 
-		p,*plength,omax,*pp,(p+ *plength),omax+ *pp);
-#endif
+#if 0
+	fprintf(stderr,"p=%d + *plength=%ld > omax=%ld + *pp=%d  (%d > %d)\n", 
+		(int)p,*plength,omax,(int)*pp,(int)(p+ *plength),
+		(int)(omax+ *pp));
 
+#endif
+#if 0
 	if ((p+ *plength) > (omax+ *pp))
 		{
 		ASN1err(ASN1_F_ASN1_GET_OBJECT,ASN1_R_TOO_LONG);
@@ -142,8 +144,9 @@ long omax;
 		 * the values are set correctly */
 		ret|=0x80;
 		}
+#endif
 	*pp=p;
-	return(ret+inf);
+	return(ret|inf);
 err:
 	ASN1err(ASN1_F_ASN1_GET_OBJECT,ASN1_R_HEADER_TOO_LONG);
 	return(0x80);
@@ -284,14 +287,14 @@ ASN1_CTX *c;
 		{
 		if (!ASN1_check_infinite_end(&c->p,c->slen))
 			{
-			c->error=ASN1_R_MISSING_EOS;
+			c->error=ERR_R_MISSING_ASN1_EOS;
 			return(0);
 			}
 		}
 	if (	((c->slen != 0) && !(c->inf & 1)) ||
 		((c->slen < 0) && (c->inf & 1)))
 		{
-		c->error=ASN1_R_LENGTH_MISMATCH;
+		c->error=ERR_R_ASN1_LENGTH_MISMATCH;
 		return(0);
 		}
 	return(1);
@@ -308,18 +311,18 @@ long *length;
 		*length);
 	if (c->inf & 0x80)
 		{
-		c->error=ASN1_R_BAD_GET_OBJECT;
+		c->error=ERR_R_BAD_GET_ASN1_OBJECT_CALL;
 		return(0);
 		}
 	if (c->tag != V_ASN1_SEQUENCE)
 		{
-		c->error=ASN1_R_EXPECTING_A_SEQUENCE;
+		c->error=ERR_R_EXPECTING_AN_ASN1_SEQUENCE;
 		return(0);
 		}
 	(*length)-=(c->p-q);
 	if (c->max && (*length < 0))
 		{
-		c->error=ASN1_R_LENGTH_MISMATCH;
+		c->error=ERR_R_ASN1_LENGTH_MISMATCH;
 		return(0);
 		}
 	if (c->inf == (1|V_ASN1_CONSTRUCTED))
@@ -402,6 +405,7 @@ int type;
 	ret->length=0;
 	ret->type=type;
 	ret->data=NULL;
+	ret->flags=0;
 	return(ret);
 	}
 
@@ -429,5 +433,16 @@ ASN1_STRING *a,*b;
 		}
 	else
 		return(i);
+	}
+
+void asn1_add_error(address,offset)
+unsigned char *address;
+int offset;
+	{
+	char buf1[16],buf2[16];
+
+	sprintf(buf1,"%lu",(unsigned long)address);
+	sprintf(buf2,"%d",offset);
+	ERR_add_error_data(4,"address=",buf1," offset=",buf2);
 	}
 
