@@ -1,5 +1,5 @@
 /* ssl/s2_pkt.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -121,7 +121,7 @@ int len;
 			}
 		}
 
-	errno=0;
+	clear_sys_error();
 	s->rwstate=SSL_NOTHING;
 	if (len <= 0) return(len);
 
@@ -231,7 +231,7 @@ int len;
 				(s->s2->rlength%EVP_CIPHER_CTX_block_size(s->enc_read_ctx) != 0))
 				{
 				SSLerr(SSL_F_SSL2_READ,SSL_R_BAD_MAC_DECODE);
-				return(SSL_RWERR_BAD_MAC_DECODE);
+				return(-1);
 				}
 			}
 		INC32(s->s2->read_sequence); /* expect next number */
@@ -248,7 +248,7 @@ int len;
 	else
 		{
 		SSLerr(SSL_F_SSL2_READ,SSL_R_BAD_STATE);
-			return(SSL_RWERR_INTERNAL_ERROR);
+			return(-1);
 		}
 	}
 
@@ -312,7 +312,7 @@ unsigned int extend;
 	s->packet=s->s2->rbuf;
 	while (newb < (int)n)
 		{
-		errno=0;
+		clear_sys_error();
 		if (s->rbio != NULL)
 			{
 			s->rwstate=SSL_READING;
@@ -380,7 +380,7 @@ int len;
 			return(-1);
 		}
 
-	errno=0;
+	clear_sys_error();
 	s->rwstate=SSL_NOTHING;
 	if (len <= 0) return(len);
 
@@ -414,15 +414,15 @@ unsigned int len;
 
 	/* check that they have given us the same buffer to
 	 * write */
-	if ((s->s2->wpend_tot != (int)len) || (s->s2->wpend_buf != buf))
+	if ((s->s2->wpend_tot > (int)len) || (s->s2->wpend_buf != buf))
 		{
 		SSLerr(SSL_F_WRITE_PENDING,SSL_R_BAD_WRITE_RETRY);
-		return(SSL_RWERR_BAD_WRITE_RETRY);
+		return(-1);
 		}
 
 	for (;;)
 		{
-		errno=0;
+		clear_sys_error();
 		if (s->wbio != NULL)
 			{
 			s->rwstate=SSL_WRITING;
