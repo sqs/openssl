@@ -60,16 +60,20 @@
 #include "evp.h"
 
 /* BEGIN ERROR CODES */
+#ifndef NO_ERR
 static ERR_STRING_DATA EVP_str_functs[]=
 	{
 {ERR_PACK(0,EVP_F_D2I_PKEY,0),	"D2I_PKEY"},
 {ERR_PACK(0,EVP_F_EVP_DECRYPTFINAL,0),	"EVP_DecryptFinal"},
 {ERR_PACK(0,EVP_F_EVP_OPENINIT,0),	"EVP_OpenInit"},
 {ERR_PACK(0,EVP_F_EVP_PKEY_COPY_PARAMETERS,0),	"EVP_PKEY_copy_parameters"},
+{ERR_PACK(0,EVP_F_EVP_PKEY_DECRYPT,0),	"EVP_PKEY_decrypt"},
+{ERR_PACK(0,EVP_F_EVP_PKEY_ENCRYPT,0),	"EVP_PKEY_encrypt"},
 {ERR_PACK(0,EVP_F_EVP_PKEY_NEW,0),	"EVP_PKEY_new"},
-{ERR_PACK(0,EVP_F_EVP_SEALINIT,0),	"EVP_SealInit"},
 {ERR_PACK(0,EVP_F_EVP_SIGNFINAL,0),	"EVP_SignFinal"},
 {ERR_PACK(0,EVP_F_EVP_VERIFYFINAL,0),	"EVP_VerifyFinal"},
+{ERR_PACK(0,EVP_F_RC2_MAGIC_TO_METH,0),	"RC2_MAGIC_TO_METH"},
+{ERR_PACK(0,EVP_F_EVP_MD_CTX_COPY,0),	"EVP_MD_CTX_copy"},
 {0,NULL},
 	};
 
@@ -83,10 +87,14 @@ static ERR_STRING_DATA EVP_str_reasons[]=
 {EVP_R_NO_VERIFY_FUNCTION_CONFIGURED     ,"no verify function configured"},
 {EVP_R_PUBLIC_KEY_NOT_RSA                ,"public key not rsa"},
 {EVP_R_UNSUPPORTED_CIPHER                ,"unsupported cipher"},
+{EVP_R_UNSUPPORTED_KEY_SIZE              ,"unsupported key size"},
 {EVP_R_WRONG_FINAL_BLOCK_LENGTH          ,"wrong final block length"},
 {EVP_R_WRONG_PUBLIC_KEY_TYPE             ,"wrong public key type"},
+{EVP_R_INPUT_NOT_INITALISED              ,"input not initalised"},
 {0,NULL},
 	};
+
+#endif
 
 void ERR_load_EVP_strings()
 	{
@@ -95,7 +103,10 @@ void ERR_load_EVP_strings()
 	if (init)
 		{
 		init=0;
+#ifndef NO_ERR
 		ERR_load_strings(ERR_LIB_EVP,EVP_str_functs);
 		ERR_load_strings(ERR_LIB_EVP,EVP_str_reasons);
+#endif
+
 		}
 	}

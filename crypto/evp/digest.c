@@ -1,5 +1,5 @@
 /* crypto/evp/digest.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -87,3 +87,13 @@ unsigned int *size;
 		*size=ctx->digest->md_size;
 	memset(&(ctx->md),0,sizeof(ctx->md));
 	}
+
+int EVP_MD_CTX_copy(EVP_MD_CTX *out, EVP_MD_CTX *in)
+{
+    if ((in == NULL) || (in->digest == NULL)) {
+        EVPerr(EVP_F_EVP_MD_CTX_COPY,EVP_R_INPUT_NOT_INITALISED);
+	return 0;
+    }
+    memcpy((char *)out,(char *)in,in->digest->ctx_size);
+    return 1;
+}    
