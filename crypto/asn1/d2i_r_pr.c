@@ -1,5 +1,5 @@
 /* crypto/asn1/d2i_r_pr.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -64,7 +64,7 @@
 #include "asn1_mac.h"
 
 /*
- * ASN1err(ASN1_F_D2I_RSAPRIVATEKEY,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_RSAPRIVATEKEY,ERR_R_ASN1_LENGTH_MISMATCH);
  * ASN1err(ASN1_F_I2D_RSAPRIVATEKEY,ASN1_R_UNKNOWN_ATTRIBUTE_TYPE);
  * ASN1err(ASN1_F_I2D_RSAPRIVATEKEY,ASN1_R_PARSING);
  */
@@ -75,15 +75,12 @@ static ASN1_METHOD method={
         (char *(*)())RSA_new,
         (void (*)()) RSA_free};
 
-ASN1_METHOD *RSAPrivateKey_asn1_meth()
+ASN1_METHOD *RSAPrivateKey_asn1_meth(void)
 	{
 	return(&method);
 	}
 
-RSA *d2i_RSAPrivateKey(a,pp,length)
-RSA **a;
-unsigned char **pp;
-long length;
+RSA *d2i_RSAPrivateKey(RSA **a, unsigned char **pp, long length)
 	{
 	int i=ASN1_R_PARSING;
 	ASN1_INTEGER *bs=NULL;

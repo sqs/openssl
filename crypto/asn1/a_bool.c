@@ -1,5 +1,5 @@
 /* crypto/asn1/a_bool.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -64,9 +64,7 @@
  * ASN1err(ASN1_F_D2I_ASN1_BOOLEAN,ASN1_R_BOOLEAN_IS_WRONG_LENGTH);
  */
 
-int i2d_ASN1_BOOLEAN(a,pp)
-int a;
-unsigned char **pp;
+int i2d_ASN1_BOOLEAN(int a, unsigned char **pp)
 	{
 	int r;
 	unsigned char *p;
@@ -81,10 +79,7 @@ unsigned char **pp;
 	return(r);
 	}
 
-int d2i_ASN1_BOOLEAN(a, pp, length)
-int *a;
-unsigned char **pp;
-long length;
+int d2i_ASN1_BOOLEAN(int *a, unsigned char **pp, long length)
 	{
 	int ret= -1;
 	unsigned char *p;

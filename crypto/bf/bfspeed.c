@@ -1,5 +1,5 @@
 /* crypto/bf/bfspeed.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -92,7 +92,8 @@ struct tms {
 #include <sys/timeb.h>
 #endif
 
-#ifdef sun
+#if defined(sun) || defined(__ultrix)
+#define _POSIX_SOURCE
 #include <limits.h>
 #include <sys/param.h>
 #endif
@@ -134,8 +135,7 @@ SIGRETTYPE sig_done(int sig);
 SIGRETTYPE sig_done();
 #endif
 
-SIGRETTYPE sig_done(sig)
-int sig;
+SIGRETTYPE sig_done(int sig)
 	{
 	signal(SIGALRM,sig_done);
 	run=0;
@@ -148,8 +148,7 @@ int sig;
 #define START	0
 #define STOP	1
 
-double Time_F(s)
-int s;
+double Time_F(int s)
 	{
 	double ret;
 #ifdef TIMES
@@ -185,9 +184,7 @@ int s;
 #endif
 	}
 
-int main(argc,argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 	{
 	long count;
 	static unsigned char buf[BUFSIZE];
@@ -217,7 +214,7 @@ char **argv;
 		count*=2;
 		Time_F(START);
 		for (i=count; i; i--)
-			BF_encrypt(data,&sch,BF_ENCRYPT);
+			BF_encrypt(data,&sch);
 		d=Time_F(STOP);
 		} while (d < 3.0);
 	ca=count/512;
@@ -235,10 +232,15 @@ char **argv;
 #endif
 
 	Time_F(START);
-	for (count=0,run=1; COND(ca); count++)
+	for (count=0,run=1; COND(ca); count+=4)
+		{
 		BF_set_key(&sch,16,key);
+		BF_set_key(&sch,16,key);
+		BF_set_key(&sch,16,key);
+		BF_set_key(&sch,16,key);
+		}
 	d=Time_F(STOP);
-	printf("%ld blowfish set_key's in %.2f seconds\n",count,d);
+	printf("%ld BF_set_key's in %.2f seconds\n",count,d);
 	a=((double)COUNT(ca))/d;
 
 #ifdef SIGALRM
@@ -248,11 +250,14 @@ char **argv;
 	printf("Doing BF_encrypt %ld times\n",cb);
 #endif
 	Time_F(START);
-	for (count=0,run=1; COND(cb); count++)
+	for (count=0,run=1; COND(cb); count+=4)
 		{
 		BF_LONG data[2];
 
-		BF_encrypt(data,&sch,BF_ENCRYPT);
+		BF_encrypt(data,&sch);
+		BF_encrypt(data,&sch);
+		BF_encrypt(data,&sch);
+		BF_encrypt(data,&sch);
 		}
 	d=Time_F(STOP);
 	printf("%ld BF_encrypt's in %.2f second\n",count,d);
@@ -275,9 +280,9 @@ char **argv;
 		count,BUFSIZE,d);
 	c=((double)COUNT(cc)*BUFSIZE)/d;
 
-	printf("blowfish set_key       per sec = %12.2f (%7.1fuS)\n",a,1.0e6/a);
-	printf("Blowfish raw ecb bytes per sec = %12.2f (%7.1fuS)\n",b,8.0e6/b);
-	printf("Blowfish cbc     bytes per sec = %12.2f (%7.1fuS)\n",c,8.0e6/c);
+	printf("Blowfish set_key       per sec = %12.3f (%9.3fuS)\n",a,1.0e6/a);
+	printf("Blowfish raw ecb bytes per sec = %12.3f (%9.3fuS)\n",b,8.0e6/b);
+	printf("Blowfish cbc     bytes per sec = %12.3f (%9.3fuS)\n",c,8.0e6/c);
 	exit(0);
 #if defined(LINT) || defined(MSDOS)
 	return(0);

@@ -1,5 +1,5 @@
 /* crypto/asn1/i2d_s_pr.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -67,9 +67,7 @@
  * ASN1err(ASN1_F_I2D_DSAPRIVATEKEY,ASN1_R_UNKNOWN_ATTRIBUTE_TYPE);
  */
 
-int i2d_DSAPrivateKey(a,pp)
-DSA *a;
-unsigned char **pp;
+int i2d_DSAPrivateKey(DSA *a, unsigned char **pp)
 	{
 	BIGNUM *num[6];
 	unsigned char data[1];

@@ -1,5 +1,5 @@
 /* crypto/sha/sha_one.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -57,13 +57,10 @@
  */
 
 #include <stdio.h>
-#include "cryptlib.h"
+#include <string.h>
 #include "sha.h"
 
-unsigned char *SHA(d, n, md)
-unsigned char *d;
-unsigned long n;
-unsigned char *md;
+unsigned char *SHA(unsigned char *d, unsigned long n, unsigned char *md)
 	{
 	SHA_CTX c;
 	static unsigned char m[SHA_DIGEST_LENGTH];

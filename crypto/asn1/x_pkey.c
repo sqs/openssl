@@ -1,5 +1,5 @@
 /* crypto/asn1/x_pkey.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -66,17 +66,12 @@
 /* ASN1err(ASN1_F_X509_PKEY_NEW,ASN1_R_IV_TOO_LARGE); */
 
 /* need to implement */
-int i2d_X509_PKEY(a,pp)
-X509_PKEY *a;
-unsigned char **pp;
+int i2d_X509_PKEY(X509_PKEY *a, unsigned char **pp)
 	{
 	return(0);
 	}
 
-X509_PKEY *d2i_X509_PKEY(a,pp,length)
-X509_PKEY **a;
-unsigned char **pp;
-long length;
+X509_PKEY *d2i_X509_PKEY(X509_PKEY **a, unsigned char **pp, long length)
 	{
 	int i;
 	M_ASN1_D2I_vars(a,X509_PKEY *,X509_PKEY_new);
@@ -91,6 +86,7 @@ long length;
 	if (ret->cipher.cipher == NULL)
 		{
 		c.error=ASN1_R_UNSUPPORTED_CIPHER;
+		c.line=__LINE__;
 		goto err;
 		}
 	if (ret->enc_algor->parameter->type == V_ASN1_OCTET_STRING) 
@@ -99,6 +95,7 @@ long length;
 		if (i > EVP_MAX_IV_LENGTH)
 			{
 			c.error=ASN1_R_IV_TOO_LARGE;
+			c.line=__LINE__;
 			goto err;
 			}
 		memcpy(ret->cipher.iv,
@@ -109,9 +106,10 @@ long length;
 	M_ASN1_D2I_Finish(a,X509_PKEY_free,ASN1_F_D2I_X509_PKEY);
 	}
 
-X509_PKEY *X509_PKEY_new()
+X509_PKEY *X509_PKEY_new(void)
 	{
 	X509_PKEY *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,X509_PKEY);
 	ret->version=0;
@@ -128,14 +126,16 @@ X509_PKEY *X509_PKEY_new()
 	M_ASN1_New_Error(ASN1_F_X509_PKEY_NEW);
 	}
 
-void X509_PKEY_free(x)
-X509_PKEY *x;
+void X509_PKEY_free(X509_PKEY *x)
 	{
 	int i;
 
 	if (x == NULL) return;
 
 	i=CRYPTO_add(&x->references,-1,CRYPTO_LOCK_X509_PKEY);
+#ifdef REF_PRINT
+	REF_PRINT("X509_PKEY",x);
+#endif
 	if (i > 0) return;
 #ifdef REF_CHECK
 	if (i < 0)

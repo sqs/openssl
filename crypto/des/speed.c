@@ -1,5 +1,5 @@
 /* crypto/des/speed.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -92,7 +92,8 @@ struct tms {
 #include <sys/timeb.h>
 #endif
 
-#ifdef sun
+#if defined(sun) || defined(__ultrix)
+#define _POSIX_SOURCE
 #include <limits.h>
 #include <sys/param.h>
 #endif
@@ -138,8 +139,7 @@ SIGRETTYPE sig_done(int sig);
 SIGRETTYPE sig_done();
 #endif
 
-SIGRETTYPE sig_done(sig)
-int sig;
+SIGRETTYPE sig_done(int sig)
 	{
 	signal(SIGALRM,sig_done);
 	run=0;
@@ -152,8 +152,7 @@ int sig;
 #define START	0
 #define STOP	1
 
-double Time_F(s)
-int s;
+double Time_F(int s)
 	{
 	double ret;
 #ifdef TIMES
@@ -189,9 +188,7 @@ int s;
 #endif
 	}
 
-int main(argc,argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 	{
 	long count;
 	static unsigned char buf[BUFSIZE];
@@ -317,11 +314,11 @@ char **argv;
 	printf("%ld crypts in %.2f second\n",count,e);
 	e=((double)COUNT(ce))/e;
 
-	printf("set_key            per sec = %12.2f (%5.1fuS)\n",a,1.0e6/a);
-	printf("DES raw ecb bytes  per sec = %12.2f (%5.1fuS)\n",b,8.0e6/b);
-	printf("DES cbc bytes      per sec = %12.2f (%5.1fuS)\n",c,8.0e6/c);
-	printf("DES ede cbc bytes  per sec = %12.2f (%5.1fuS)\n",d,8.0e6/d);
-	printf("crypt              per sec = %12.2f (%5.1fuS)\n",e,1.0e6/e);
+	printf("set_key            per sec = %12.2f (%9.3fuS)\n",a,1.0e6/a);
+	printf("DES raw ecb bytes  per sec = %12.2f (%9.3fuS)\n",b,8.0e6/b);
+	printf("DES cbc bytes      per sec = %12.2f (%9.3fuS)\n",c,8.0e6/c);
+	printf("DES ede cbc bytes  per sec = %12.2f (%9.3fuS)\n",d,8.0e6/d);
+	printf("crypt              per sec = %12.2f (%9.3fuS)\n",e,1.0e6/e);
 	exit(0);
 #if defined(LINT) || defined(MSDOS)
 	return(0);

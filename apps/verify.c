@@ -1,5 +1,5 @@
 /* apps/verify.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -78,9 +78,7 @@ static int check();
 
 static int v_verbose=0;
 
-int MAIN(argc, argv)
-int argc;
-char **argv;
+int MAIN(int argc, char **argv)
 	{
 	int i,ret=1;
 	char *CApath=NULL,*CAfile=NULL;
@@ -97,7 +95,7 @@ char **argv;
 
 	if (bio_err == NULL)
 		if ((bio_err=BIO_new(BIO_s_file())) != NULL)
-			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE);
+			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE|BIO_FP_TEXT);
 
 	argc--;
 	argv++;
@@ -141,6 +139,7 @@ char **argv;
 		X509_LOOKUP_add_dir(lookup,NULL,X509_FILETYPE_DEFAULT);
 
 
+	ERR_clear_error();
 	if (argc < 1) check(cert_ctx,NULL);
 	else
 		for (i=0; i<argc; i++)
@@ -153,9 +152,7 @@ end:
 	EXIT(ret);
 	}
 
-static int check(ctx,file)
-X509_STORE *ctx;
-char *file;
+static int check(X509_STORE *ctx, char *file)
 	{
 	X509 *x=NULL;
 	BIO *in=NULL;
@@ -209,9 +206,7 @@ end:
 	return(ret);
 	}
 
-static int MS_CALLBACK cb(ok,ctx)
-int ok;
-X509_STORE_CTX *ctx;
+static int MS_CALLBACK cb(int ok, X509_STORE_CTX *ctx)
 	{
 	char buf[256];
 

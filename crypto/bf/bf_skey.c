@@ -1,5 +1,5 @@
 /* crypto/bf/bf_skey.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,10 +62,7 @@
 #include "bf_locl.h"
 #include "bf_pi.h"
 
-void BF_set_key(key,len,data)
-BF_KEY *key;
-int len;
-unsigned char *data;
+void BF_set_key(BF_KEY *key, int len, unsigned char *data)
 	{
 	int i;
 	BF_LONG *p,ri,in[2];
@@ -103,7 +100,7 @@ unsigned char *data;
 	in[1]=0L;
 	for (i=0; i<(BF_ROUNDS+2); i+=2)
 		{
-		BF_encrypt(in,key,BF_ENCRYPT);
+		BF_encrypt(in,key);
 		p[i  ]=in[0];
 		p[i+1]=in[1];
 		}
@@ -111,7 +108,7 @@ unsigned char *data;
 	p=key->S;
 	for (i=0; i<4*256; i+=2)
 		{
-		BF_encrypt(in,key,BF_ENCRYPT);
+		BF_encrypt(in,key);
 		p[i  ]=in[0];
 		p[i+1]=in[1];
 		}

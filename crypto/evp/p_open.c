@@ -1,5 +1,5 @@
 /* crypto/evp/p_open.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,20 +62,15 @@
 #include "objects.h"
 #include "x509.h"
 
-int EVP_OpenInit(ctx,type,ek,ekl,iv,priv)
-EVP_CIPHER_CTX *ctx;
-EVP_CIPHER *type;
-unsigned char *ek;
-int ekl;
-unsigned char *iv;
-EVP_PKEY *priv;
+int EVP_OpenInit(EVP_CIPHER_CTX *ctx, EVP_CIPHER *type, unsigned char *ek,
+	     int ekl, unsigned char *iv, EVP_PKEY *priv)
 	{
 	unsigned char *key=NULL;
 	int i,size=0,ret=0;
 	
 	if (priv->type != EVP_PKEY_RSA)
 		{
-                EVPerr(EVP_F_EVP_OPENINIT,EVP_R_PUBLIC_KEY_NOT_RSA);
+		EVPerr(EVP_F_EVP_OPENINIT,EVP_R_PUBLIC_KEY_NOT_RSA);
 		ret= -1;
 		goto err;
                 }
@@ -90,13 +85,14 @@ EVP_PKEY *priv;
 		goto err;
 		}
 
-	i=RSA_private_decrypt(ekl,ek,key,priv->pkey.rsa,RSA_PKCS1_PADDING);
+	i=EVP_PKEY_decrypt(key,ek,ekl,priv);
 	if (i != type->key_len)
 		{
 		/* ERROR */
 		goto err;
 		}
 
+	EVP_CIPHER_CTX_init(ctx);
 	EVP_DecryptInit(ctx,type,key,iv);
 	ret=1;
 err:
@@ -105,10 +101,7 @@ err:
 	return(ret);
 	}
 
-int EVP_OpenFinal(ctx,out,outl)
-EVP_CIPHER_CTX *ctx;
-unsigned char *out;
-int *outl;
+int EVP_OpenFinal(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl)
 	{
 	int i;
 

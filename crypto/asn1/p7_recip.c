@@ -1,5 +1,5 @@
 /* crypto/asn1/p7_recip.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,13 +62,11 @@
 #include "x509.h"
 
 /*
- * ASN1err(ASN1_F_PKCS7_RECIP_INFO_NEW,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_D2I_PKCS7_RECIP_INFO,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_PKCS7_RECIP_INFO_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_PKCS7_RECIP_INFO,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
-int i2d_PKCS7_RECIP_INFO(a,pp)
-PKCS7_RECIP_INFO *a;
-unsigned char **pp;
+int i2d_PKCS7_RECIP_INFO(PKCS7_RECIP_INFO *a, unsigned char **pp)
 	{
 	M_ASN1_I2D_vars(a);
 
@@ -87,10 +85,8 @@ unsigned char **pp;
 	M_ASN1_I2D_finish();
 	}
 
-PKCS7_RECIP_INFO *d2i_PKCS7_RECIP_INFO(a,pp,length)
-PKCS7_RECIP_INFO **a;
-unsigned char **pp;
-long length;
+PKCS7_RECIP_INFO *d2i_PKCS7_RECIP_INFO(PKCS7_RECIP_INFO **a,
+	     unsigned char **pp, long length)
 	{
 	M_ASN1_D2I_vars(a,PKCS7_RECIP_INFO *,PKCS7_RECIP_INFO_new);
 
@@ -104,27 +100,29 @@ long length;
 	M_ASN1_D2I_Finish(a,PKCS7_RECIP_INFO_free,ASN1_F_D2I_PKCS7_RECIP_INFO);
 	}
 
-PKCS7_RECIP_INFO *PKCS7_RECIP_INFO_new()
+PKCS7_RECIP_INFO *PKCS7_RECIP_INFO_new(void)
 	{
 	PKCS7_RECIP_INFO *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,PKCS7_RECIP_INFO);
 	M_ASN1_New(ret->version,ASN1_INTEGER_new);
 	M_ASN1_New(ret->issuer_and_serial,PKCS7_ISSUER_AND_SERIAL_new);
 	M_ASN1_New(ret->key_enc_algor,X509_ALGOR_new);
 	M_ASN1_New(ret->enc_key,ASN1_OCTET_STRING_new);
+	ret->cert=NULL;
 	return(ret);
 	M_ASN1_New_Error(ASN1_F_PKCS7_RECIP_INFO_NEW);
 	}
 
-void PKCS7_RECIP_INFO_free(a)
-PKCS7_RECIP_INFO *a;
+void PKCS7_RECIP_INFO_free(PKCS7_RECIP_INFO *a)
 	{
 	if (a == NULL) return;
 	ASN1_INTEGER_free(a->version);
 	PKCS7_ISSUER_AND_SERIAL_free(a->issuer_and_serial);
 	X509_ALGOR_free(a->key_enc_algor);
 	ASN1_OCTET_STRING_free(a->enc_key);
+	if (a->cert != NULL) X509_free(a->cert);
 	Free((char *)a);
 	}
 

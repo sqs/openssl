@@ -1,5 +1,5 @@
 /* ssl/ssl_err2.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -60,7 +60,7 @@
 #include "err.h"
 #include "ssl.h"
 
-void SSL_load_error_strings()
+void SSL_load_error_strings(void)
 	{
 #ifndef NO_ERR
 	ERR_load_crypto_strings();

@@ -1,5 +1,5 @@
 /* crypto/des/ede_enc.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -58,15 +58,9 @@
 
 #include "des_locl.h"
 
-void des_ede3_cbc_encrypt(input, output, length, ks1, ks2, ks3, ivec, enc)
-des_cblock (*input);
-des_cblock (*output);
-long length;
-des_key_schedule ks1;
-des_key_schedule ks2;
-des_key_schedule ks3;
-des_cblock (*ivec);
-int enc;
+void des_ede3_cbc_encrypt(des_cblock (*input), des_cblock (*output),
+	     long length, des_key_schedule ks1, des_key_schedule ks2,
+	     des_key_schedule ks3, des_cblock (*ivec), int enc)
 	{
 	register DES_LONG tin0,tin1;
 	register DES_LONG tout0,tout1,xor0,xor1;
@@ -149,7 +143,7 @@ int enc;
 			{
 			c2l(in,tin0);
 			c2l(in,tin1);
-
+			
 			t0=tin0;
 			t1=tin1;
 
@@ -158,13 +152,14 @@ int enc;
 			des_decrypt3((DES_LONG *)tin,ks1,ks2,ks3);
 			tout0=tin[0];
 			tout1=tin[1];
-
+		
 			tout0^=xor0;
 			tout1^=xor1;
 			l2cn(tout0,tout1,out,l+8);
 			xor0=t0;
 			xor1=t1;
 			}
+
 		iv=(unsigned char *)ivec;
 		l2c(xor0,iv);
 		l2c(xor1,iv);
@@ -174,14 +169,9 @@ int enc;
 	}
 
 #ifdef undef /* MACRO */
-void des_ede2_cbc_encrypt(input, output, length, ks1, ks2, ivec, enc)
-des_cblock (*input);
-des_cblock (*output);
-long length;
-des_key_schedule ks1;
-des_key_schedule ks2;
-des_cblock (*ivec);
-int enc;
+void des_ede2_cbc_encrypt(des_cblock (*input), des_cblock (*output),
+	     long length, des_key_schedule ks1, des_key_schedule ks2,
+	     des_cblock (*ivec), int enc)
 	{
 	des_ede3_cbc_encrypt(input,output,length,ks1,ks2,ks1,ivec,enc);
 	}

@@ -1,5 +1,5 @@
 /* crypto/rsa/rsa_gen.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,24 +62,22 @@
 #include "bn.h"
 #include "rsa.h"
 
-RSA *RSA_generate_key(bits, e_value, callback)
-int bits;
-unsigned long e_value;
-void (*callback)(P_I_I);
+RSA *RSA_generate_key(int bits, unsigned long e_value,
+	     void (*callback)(P_I_I_P), char *cb_arg)
 	{
 	RSA *rsa=NULL;
 	BIGNUM *r0=NULL,*r1=NULL,*r2=NULL,*r3=NULL,*tmp;
-	int bitsp,bitsq,ok= -1,n=0;
+	int bitsp,bitsq,ok= -1,n=0,i;
 	BN_CTX *ctx=NULL,*ctx2=NULL;
 
 	ctx=BN_CTX_new();
 	if (ctx == NULL) goto err;
 	ctx2=BN_CTX_new();
 	if (ctx2 == NULL) goto err;
-	r0=ctx->bn[0];
-	r1=ctx->bn[1];
-	r2=ctx->bn[2];
-	r3=ctx->bn[3];
+	r0= &(ctx->bn[0]);
+	r1= &(ctx->bn[1]);
+	r2= &(ctx->bn[2]);
+	r3= &(ctx->bn[3]);
 	ctx->tos+=4;
 
 	bitsp=(bits+1)/2;
@@ -90,32 +88,43 @@ void (*callback)(P_I_I);
 	/* set e */ 
 	rsa->e=BN_new();
 	if (rsa->e == NULL) goto err;
+
+#if 1
+	/* The problem is when building with 8, 16, or 32 BN_ULONG,
+	 * unsigned long can be larger */
+	for (i=0; i<sizeof(unsigned long)*8; i++)
+		{
+		if (e_value & (1<<i))
+			BN_set_bit(rsa->e,i);
+		}
+#else
 	if (!BN_set_word(rsa->e,e_value)) goto err;
+#endif
 
 	/* generate p and q */
 	for (;;)
 		{
-		rsa->p=BN_generate_prime(bitsp,0,NULL,NULL,callback);
+		rsa->p=BN_generate_prime(NULL,bitsp,0,NULL,NULL,callback,cb_arg);
 		if (rsa->p == NULL) goto err;
 		if (!BN_sub(r2,rsa->p,BN_value_one())) goto err;
 		if (!BN_gcd(r1,r2,rsa->e,ctx)) goto err;
 		if (BN_is_one(r1)) break;
-		if (callback != NULL) callback(2,n++);
+		if (callback != NULL) callback(2,n++,cb_arg);
 		BN_free(rsa->p);
 		}
-	if (callback != NULL) callback(3,0);
+	if (callback != NULL) callback(3,0,cb_arg);
 	for (;;)
 		{
-		rsa->q=BN_generate_prime(bitsq,0,NULL,NULL,callback);
+		rsa->q=BN_generate_prime(NULL,bitsq,0,NULL,NULL,callback,cb_arg);
 		if (rsa->q == NULL) goto err;
 		if (!BN_sub(r2,rsa->q,BN_value_one())) goto err;
 		if (!BN_gcd(r1,r2,rsa->e,ctx)) goto err;
 		if (BN_is_one(r1) && (BN_cmp(rsa->p,rsa->q) != 0))
 			break;
-		if (callback != NULL) callback(2,n++);
+		if (callback != NULL) callback(2,n++,cb_arg);
 		BN_free(rsa->q);
 		}
-	if (callback != NULL) callback(3,1);
+	if (callback != NULL) callback(3,1,cb_arg);
 	if (BN_cmp(rsa->p,rsa->q) < 0)
 		{
 		tmp=rsa->p;
@@ -126,12 +135,12 @@ void (*callback)(P_I_I);
 	/* calculate n */
 	rsa->n=BN_new();
 	if (rsa->n == NULL) goto err;
-	if (!BN_mul(rsa->n,rsa->p,rsa->q)) goto err;
+	if (!BN_mul(rsa->n,rsa->p,rsa->q,ctx)) goto err;
 
 	/* calculate d */
 	if (!BN_sub(r1,rsa->p,BN_value_one())) goto err;	/* p-1 */
 	if (!BN_sub(r2,rsa->q,BN_value_one())) goto err;	/* q-1 */
-	if (!BN_mul(r0,r1,r2)) goto err;	/* (p-1)(q-1) */
+	if (!BN_mul(r0,r1,r2,ctx)) goto err;	/* (p-1)(q-1) */
 
 /* should not be needed, since gcd(p-1,e) == 1 and gcd(q-1,e) == 1 */
 /*	for (;;)
@@ -148,7 +157,7 @@ void (*callback)(P_I_I);
 		goto err;
 		}
 */
-	rsa->d=(BIGNUM *)BN_mod_inverse(rsa->e,r0,ctx2);	/* d */
+	rsa->d=(BIGNUM *)BN_mod_inverse(NULL,rsa->e,r0,ctx2);	/* d */
 	if (rsa->d == NULL) goto err;
 
 	/* calculate d mod (p-1) */
@@ -162,7 +171,7 @@ void (*callback)(P_I_I);
 	if (!BN_mod(rsa->dmq1,rsa->d,r2,ctx)) goto err;
 
 	/* calculate inverse of q mod p */
-	rsa->iqmp=BN_mod_inverse(rsa->q,rsa->p,ctx2);
+	rsa->iqmp=BN_mod_inverse(NULL,rsa->q,rsa->p,ctx2);
 	if (rsa->iqmp == NULL) goto err;
 
 	ok=1;

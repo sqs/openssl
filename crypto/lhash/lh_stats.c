@@ -1,5 +1,5 @@
 /* crypto/lhash/lh_stats.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -59,17 +59,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-/* If you wish to build this outside of SSLeay, remove the following line
+/* If you wish to build this outside of SSLeay, remove the following lines
  * and things should work as expected */
-#include "bio.h"
+#include "cryptlib.h"
 
 #include "lhash.h"
 
 #ifndef HEADER_BIO_H
 
-void lh_stats(lh, out)
-LHASH *lh;
-FILE *out;
+void lh_stats(LHASH *lh, FILE *out)
 	{
 	fprintf(out,"num_items             = %lu\n",lh->num_items);
 	fprintf(out,"num_nodes             = %u\n",lh->num_nodes);
@@ -95,9 +93,7 @@ FILE *out;
 #endif
 	}
 
-void lh_node_stats(lh, out)
-LHASH *lh;
-FILE *out;
+void lh_node_stats(LHASH *lh, FILE *out)
 	{
 	LHASH_NODE *n;
 	unsigned int i,num;
@@ -110,9 +106,7 @@ FILE *out;
 		}
 	}
 
-void lh_node_usage_stats(lh, out)
-LHASH *lh;
-FILE *out;
+void lh_node_usage_stats(LHASH *lh, FILE *out)
 	{
 	LHASH_NODE *n;
 	unsigned long num;
@@ -141,10 +135,8 @@ FILE *out;
 
 #else
 
-#ifndef WIN16
-void lh_stats(lh,fp)
-LHASH *lh;
-FILE *fp;
+#ifndef NO_FP_API
+void lh_stats(LHASH *lh, FILE *fp)
 	{
 	BIO *bp;
 
@@ -156,9 +148,7 @@ FILE *fp;
 end:;
 	}
 
-void lh_node_stats(lh,fp)
-LHASH *lh;
-FILE *fp;
+void lh_node_stats(LHASH *lh, FILE *fp)
 	{
 	BIO *bp;
 
@@ -170,9 +160,7 @@ FILE *fp;
 end:;
 	}
 
-void lh_node_usage_stats(lh,fp)
-LHASH *lh;
-FILE *fp;
+void lh_node_usage_stats(LHASH *lh, FILE *fp)
 	{
 	BIO *bp;
 
@@ -186,9 +174,7 @@ end:;
 
 #endif
 
-void lh_stats_bio(lh, out)
-LHASH *lh;
-BIO *out;
+void lh_stats_bio(LHASH *lh, BIO *out)
 	{
 	char buf[128];
 
@@ -236,9 +222,7 @@ BIO *out;
 #endif
 	}
 
-void lh_node_stats_bio(lh, out)
-LHASH *lh;
-BIO *out;
+void lh_node_stats_bio(LHASH *lh, BIO *out)
 	{
 	LHASH_NODE *n;
 	unsigned int i,num;
@@ -253,9 +237,7 @@ BIO *out;
 		}
 	}
 
-void lh_node_usage_stats_bio(lh, out)
-LHASH *lh;
-BIO *out;
+void lh_node_usage_stats_bio(LHASH *lh, BIO *out)
 	{
 	LHASH_NODE *n;
 	unsigned long num;

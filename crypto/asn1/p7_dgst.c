@@ -1,5 +1,5 @@
 /* crypto/asn1/p7_dgst.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,13 +62,11 @@
 #include "x509.h"
 
 /*
- * ASN1err(ASN1_F_PKCS7_DIGEST_NEW,ASN1_R_MISSING_EOS);
- * ASN1err(ASN1_F_D2I_PKCS7_DIGEST,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_PKCS7_DIGEST_NEW,ERR_R_MISSING_ASN1_EOS);
+ * ASN1err(ASN1_F_D2I_PKCS7_DIGEST,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
-int i2d_PKCS7_DIGEST(a,pp)
-PKCS7_DIGEST *a;
-unsigned char **pp;
+int i2d_PKCS7_DIGEST(PKCS7_DIGEST *a, unsigned char **pp)
 	{
 	M_ASN1_I2D_vars(a);
 
@@ -87,10 +85,8 @@ unsigned char **pp;
 	M_ASN1_I2D_finish();
 	}
 
-PKCS7_DIGEST *d2i_PKCS7_DIGEST(a,pp,length)
-PKCS7_DIGEST **a;
-unsigned char **pp;
-long length;
+PKCS7_DIGEST *d2i_PKCS7_DIGEST(PKCS7_DIGEST **a, unsigned char **pp,
+	     long length)
 	{
 	M_ASN1_D2I_vars(a,PKCS7_DIGEST *,PKCS7_DIGEST_new);
 
@@ -104,9 +100,10 @@ long length;
 	M_ASN1_D2I_Finish(a,PKCS7_DIGEST_free,ASN1_F_D2I_PKCS7_DIGEST);
 	}
 
-PKCS7_DIGEST *PKCS7_DIGEST_new()
+PKCS7_DIGEST *PKCS7_DIGEST_new(void)
 	{
 	PKCS7_DIGEST *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,PKCS7_DIGEST);
 	M_ASN1_New(ret->version,ASN1_INTEGER_new);
@@ -117,8 +114,7 @@ PKCS7_DIGEST *PKCS7_DIGEST_new()
 	M_ASN1_New_Error(ASN1_F_PKCS7_DIGEST_NEW);
 	}
 
-void PKCS7_DIGEST_free(a)
-PKCS7_DIGEST *a;
+void PKCS7_DIGEST_free(PKCS7_DIGEST *a)
 	{
 	if (a == NULL) return;
 	ASN1_INTEGER_free(a->version);

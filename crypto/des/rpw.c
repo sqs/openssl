@@ -1,5 +1,5 @@
 /* crypto/des/rpw.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -59,9 +59,7 @@
 #include <stdio.h>
 #include "des.h"
 
-int main(argc,argv)
-int argc;
-char *argv[];
+int main(int argc, char *argv[])
 	{
 	des_cblock k,k1;
 	int i;

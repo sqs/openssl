@@ -1,5 +1,5 @@
 /* crypto/asn1/x_info.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,7 +62,7 @@
 #include "asn1_mac.h"
 #include "x509.h"
 
-X509_INFO *X509_INFO_new()
+X509_INFO *X509_INFO_new(void)
 	{
 	X509_INFO *ret=NULL;
 
@@ -84,14 +84,16 @@ X509_INFO *X509_INFO_new()
 	return(ret);
 	}
 
-void X509_INFO_free(x)
-X509_INFO *x;
+void X509_INFO_free(X509_INFO *x)
 	{
 	int i;
 
 	if (x == NULL) return;
 
 	i=CRYPTO_add(&x->references,-1,CRYPTO_LOCK_X509_INFO);
+#ifdef REF_PRINT
+	REF_PRINT("X509_INFO",x);
+#endif
 	if (i > 0) return;
 #ifdef REF_CHECK
 	if (i < 0)

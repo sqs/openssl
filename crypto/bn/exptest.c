@@ -1,5 +1,5 @@
 /* crypto/bn/exptest.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,18 +63,21 @@
 #include "bn.h"
 #include "rand.h"
 #include "err.h"
+#ifdef WINDOWS
+#include "../bio/bss_file.c"
+#endif
 
 #define NUM_BITS	(BN_BITS*2)
 
-int main(argc,argv)
-int argc;
-char *argv[];
+int main(int argc, char *argv[])
 	{
 	BN_CTX *ctx;
 	BIO *out=NULL;
 	int i,ret;
 	unsigned char c;
 	BIGNUM *r_mont,*r_recp,*a,*b,*m;
+
+	ERR_load_BN_strings();
 
 	ctx=BN_CTX_new();
 	if (ctx == NULL) exit(1);
@@ -87,11 +90,8 @@ char *argv[];
 		(a == NULL) || (b == NULL))
 		goto err;
 
-#ifdef WIN16
-	out=BIO_new(BIO_s_file_internal_w16());
-#else
 	out=BIO_new(BIO_s_file());
-#endif
+
 	if (out == NULL) exit(1);
 	BIO_set_fp(out,stdout,BIO_NOCLOSE);
 
@@ -112,13 +112,21 @@ char *argv[];
 		BN_mod(a,a,m,ctx);
 		BN_mod(b,b,m,ctx);
 
-		ret=BN_mod_exp_mont(r_mont,a,b,m,ctx);
+		ret=BN_mod_exp_mont(r_mont,a,b,m,ctx,NULL);
 		if (ret <= 0)
-			{ printf("BN_mod_exp_mont() problems\n"); exit(1); }
+			{
+			printf("BN_mod_exp_mont() problems\n");
+			ERR_print_errors(out);
+			exit(1);
+			}
 
 		ret=BN_mod_exp_recp(r_recp,a,b,m,ctx);
 		if (ret <= 0)
-			{ printf("BN_mod_exp_recp() problems\n"); exit(1); }
+			{
+			printf("BN_mod_exp_recp() problems\n");
+			ERR_print_errors(out);
+			exit(1);
+			}
 		
 		if (BN_cmp(r_mont,r_recp) != 0)
 			{
@@ -137,6 +145,7 @@ char *argv[];
 			fflush(stdout);
 			}
 		}
+	CRYPTO_mem_leaks(out);
 	printf(" done\n");
 	exit(0);
 err:

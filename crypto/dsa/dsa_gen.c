@@ -1,5 +1,5 @@
 /* crypto/dsa/dsa_gen.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -72,13 +72,9 @@
 #include "dsa.h"
 #include "rand.h"
 
-DSA *DSA_generate_parameters(bits,seed_in,seed_len,counter_ret,h_ret,callback)
-int bits;
-unsigned char *seed_in;
-int seed_len;
-int *counter_ret;
-unsigned long *h_ret;
-void (*callback)();
+DSA *DSA_generate_parameters(int bits, unsigned char *seed_in, int seed_len,
+	     int *counter_ret, unsigned long *h_ret, void (*callback)(),
+	     char *cb_arg)
 	{
 	int ok=0;
 	unsigned char seed[SHA_DIGEST_LENGTH];
@@ -86,6 +82,7 @@ void (*callback)();
 	unsigned char buf[SHA_DIGEST_LENGTH],buf2[SHA_DIGEST_LENGTH];
 	BIGNUM *r0,*W,*X,*c,*test;
 	BIGNUM *g=NULL,*q=NULL,*p=NULL;
+	BN_MONT_CTX *mont=NULL;
 	int k,n=0,i,b,m=0;
 	int counter=0;
 	BN_CTX *ctx=NULL,*ctx2=NULL;
@@ -98,20 +95,20 @@ void (*callback)();
 	if ((seed_in != NULL) && (seed_len == 20))
 		memcpy(seed,seed_in,seed_len);
 
-	ctx=BN_CTX_new();
-	if (ctx == NULL) goto err;
-	ctx2=BN_CTX_new();
-	if (ctx2 == NULL) goto err;
-	ret=DSA_new();
-	if (ret == NULL) goto err;
-	r0=ctx2->bn[0];
-	g=ctx2->bn[1];
-	W=ctx2->bn[2];
-	q=ctx2->bn[3];
-	X=ctx2->bn[4];
-	c=ctx2->bn[5];
-	p=ctx2->bn[6];
-	test=ctx2->bn[7];
+	if ((ctx=BN_CTX_new()) == NULL) goto err;
+	if ((ctx2=BN_CTX_new()) == NULL) goto err;
+	if ((ret=DSA_new()) == NULL) goto err;
+
+	if ((mont=BN_MONT_CTX_new()) == NULL) goto err;
+
+	r0= &(ctx2->bn[0]);
+	g= &(ctx2->bn[1]);
+	W= &(ctx2->bn[2]);
+	q= &(ctx2->bn[3]);
+	X= &(ctx2->bn[4]);
+	c= &(ctx2->bn[5]);
+	p= &(ctx2->bn[6]);
+	test= &(ctx2->bn[7]);
 
 	BN_lshift(test,BN_value_one(),bits-1);
 
@@ -120,7 +117,7 @@ void (*callback)();
 		for (;;)
 			{
 			/* step 1 */
-			if (callback != NULL) callback(0,m++);
+			if (callback != NULL) callback(0,m++,cb_arg);
 
 			if (!seed_len)
 				RAND_bytes(seed,SHA_DIGEST_LENGTH);
@@ -147,13 +144,13 @@ void (*callback)();
 			if (!BN_bin2bn(md,SHA_DIGEST_LENGTH,q)) abort();
 
 			/* step 4 */
-			if (DSA_is_prime(q,callback) > 0) break;
+			if (DSA_is_prime(q,callback,cb_arg) > 0) break;
 			/* do a callback call */
 			/* step 5 */
 			}
 
-		if (callback != NULL) callback(2,0);
-		if (callback != NULL) callback(3,0);
+		if (callback != NULL) callback(2,0,cb_arg);
+		if (callback != NULL) callback(3,0,cb_arg);
 
 		/* step 6 */
 		counter=0;
@@ -196,7 +193,7 @@ void (*callback)();
 			if (BN_cmp(p,test) >= 0)
 				{
 				/* step 11 */
-				if (DSA_is_prime(p,callback) > 0)
+				if (DSA_is_prime(p,callback,cb_arg) > 0)
 					goto end;
 				}
 
@@ -206,11 +203,11 @@ void (*callback)();
 			/* step 14 */
 			if (counter >= 4096) break;
 
-			if (callback != NULL) callback(0,counter);
+			if (callback != NULL) callback(0,counter,cb_arg);
 			}
 		}
 end:
-	if (callback != NULL) callback(2,1);
+	if (callback != NULL) callback(2,1,cb_arg);
 
 	/* We now need to gernerate g */
 	/* Set r0=(p-1)/q */
@@ -218,16 +215,18 @@ end:
         BN_div(r0,NULL,test,q,ctx);
 
 	BN_set_word(test,h);
+	BN_MONT_CTX_set(mont,p,ctx);
+
 	for (;;)
 		{
 		/* g=test^r0%p */
-		BN_mod_exp(g,test,r0,p,ctx);
+		BN_mod_exp_mont(g,test,r0,p,ctx,mont);
 		if (!BN_is_one(g)) break;
 		BN_add(test,test,BN_value_one());
 		h++;
 		}
 
-	if (callback != NULL) callback(3,1);
+	if (callback != NULL) callback(3,1,cb_arg);
 
 	ok=1;
 err:
@@ -244,31 +243,32 @@ err:
 		if (counter_ret != NULL) *counter_ret=counter;
 		if (h_ret != NULL) *h_ret=h;
 		}
-	BN_CTX_free(ctx);
-	BN_CTX_free(ctx2);
+	if (ctx != NULL) BN_CTX_free(ctx);
+	if (ctx != NULL) BN_CTX_free(ctx2);
+	if (mont != NULL) BN_MONT_CTX_free(mont);
 	return(ok?ret:NULL);
 	}
 
-int DSA_is_prime(w, callback)
-BIGNUM *w;
-void (*callback)();
+int DSA_is_prime(BIGNUM *w, void (*callback)(), char *cb_arg)
 	{
 	int ok= -1,j,i,n;
 	BN_CTX *ctx=NULL,*ctx2=NULL;
-	BIGNUM *w_1,*b,*m,*z;
+	BIGNUM *w_1,*b,*m,*z,*tmp,*mont_1;
 	int a;
+	BN_MONT_CTX *mont=NULL;
 
 	if (!BN_is_bit_set(w,0)) return(0);
 
-	ctx=BN_CTX_new();
-	if (ctx == NULL) goto err;
-	ctx2=BN_CTX_new();
-	if (ctx2 == NULL) goto err;
+	if ((ctx=BN_CTX_new()) == NULL) goto err;
+	if ((ctx2=BN_CTX_new()) == NULL) goto err;
+	if ((mont=BN_MONT_CTX_new()) == NULL) goto err;
 
-	m=  ctx2->bn[2];
-	b=  ctx2->bn[3];
-	z=  ctx2->bn[4];
-	w_1=ctx2->bn[5];
+	m=   &(ctx2->bn[2]);
+	b=   &(ctx2->bn[3]);
+	z=   &(ctx2->bn[4]);
+	w_1= &(ctx2->bn[5]);
+	tmp= &(ctx2->bn[6]);
+	mont_1= &(ctx2->bn[7]);
 
 	/* step 1 */
 	n=50;
@@ -279,24 +279,30 @@ void (*callback)();
 		;
 	if (!BN_rshift(m,w_1,a)) goto err;
 
+	BN_MONT_CTX_set(mont,w,ctx);
+	BN_to_montgomery(mont_1,BN_value_one(),mont,ctx);
+	BN_to_montgomery(w_1,w_1,mont,ctx);
 	for (i=1; i < n; i++)
 		{
 		/* step 3 */
 		BN_rand(b,BN_num_bits(w)-2/*-1*/,0,0);
-		BN_set_word(b,0x10001L);
+		/* BN_set_word(b,0x10001L); */
 
 		/* step 4 */
 		j=0;
-		if (!BN_mod_exp(z,b,m,w,ctx)) goto err;
+		if (!BN_mod_exp_mont(z,b,m,w,ctx,mont)) goto err;
+
+		if (!BN_to_montgomery(z,z,mont,ctx)) goto err;
 
 		/* step 5 */
 		for (;;)
 			{
-			if (((j == 0) && BN_is_one(z)) || (BN_cmp(z,w_1) == 0))
+			if (((j == 0) && (BN_cmp(z,mont_1) == 0)) ||
+				(BN_cmp(z,w_1) == 0))
 				break;
 
 			/* step 6 */
-			if ((j > 0) && BN_is_one(z))
+			if ((j > 0) && (BN_cmp(z,mont_1) == 0))
 				{
 				ok=0;
 				goto err;
@@ -309,8 +315,8 @@ void (*callback)();
 				goto err;
 				}
 
-			if (!BN_mod_mul(z,z,z,w,ctx)) goto err;
-			if (callback != NULL) callback(1,j);
+			if (!BN_mod_mul_montgomery(z,z,z,mont,ctx)) goto err;
+			if (callback != NULL) callback(1,j,cb_arg);
 			}
 		}
 

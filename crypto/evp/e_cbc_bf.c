@@ -1,5 +1,5 @@
 /* crypto/evp/e_cbc_bf.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -79,35 +79,34 @@ static EVP_CIPHER bfish_cbc_cipher=
 	8,EVP_BLOWFISH_KEY_SIZE,8,
 	bf_cbc_init_key,
 	bf_cbc_cipher,
+	NULL,
+	sizeof(EVP_CIPHER_CTX)-sizeof((((EVP_CIPHER_CTX *)NULL)->c))+
+		sizeof((((EVP_CIPHER_CTX *)NULL)->c.bf_ks)),
+	EVP_CIPHER_get_asn1_iv,
+	EVP_CIPHER_set_asn1_iv,
 	};
 
-EVP_CIPHER *EVP_bf_cbc()
+EVP_CIPHER *EVP_bf_cbc(void)
 	{
 	return(&bfish_cbc_cipher);
 	}
 	
-static void bf_cbc_init_key(ctx,key,iv,enc)
-EVP_CIPHER_CTX *ctx;
-unsigned char *key;
-unsigned char *iv;
-int enc;
+static void bf_cbc_init_key(EVP_CIPHER_CTX *ctx, unsigned char *key,
+	     unsigned char *iv, int enc)
 	{
 	if (iv != NULL)
-		memcpy(&(ctx->c.bf_cbc.oiv[0]),iv,8);
-	memcpy(&(ctx->c.bf_cbc.iv[0]),&(ctx->c.bf_cbc.oiv[0]),8);
+		memcpy(&(ctx->oiv[0]),iv,8);
+	memcpy(&(ctx->iv[0]),&(ctx->oiv[0]),8);
 	if (key != NULL)
-		BF_set_key(&(ctx->c.bf_cbc.ks),EVP_BLOWFISH_KEY_SIZE,key);
+		BF_set_key(&(ctx->c.bf_ks),EVP_BLOWFISH_KEY_SIZE,key);
 	}
 
-static void bf_cbc_cipher(ctx,out,in,inl)
-EVP_CIPHER_CTX *ctx;
-unsigned char *out;
-unsigned char *in;
-unsigned int inl;
+static void bf_cbc_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+	     unsigned char *in, unsigned int inl)
 	{
 	BF_cbc_encrypt(
 		in,out,(long)inl,
-		&(ctx->c.bf_cbc.ks),&(ctx->c.bf_cbc.iv[0]),
+		&(ctx->c.bf_ks),&(ctx->iv[0]),
 		ctx->encrypt);
 	}
 

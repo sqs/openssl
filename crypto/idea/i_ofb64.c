@@ -1,5 +1,5 @@
 /* crypto/idea/i_ofb64.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,13 +63,8 @@
  * used.  The extra state information to record how much of the
  * 64bit block we have used is contained in *num;
  */
-void idea_ofb64_encrypt(in, out, length, schedule, ivec, num)
-unsigned char *in;
-unsigned char *out;
-long length;
-IDEA_KEY_SCHEDULE *schedule;
-unsigned char *ivec;
-int *num;
+void idea_ofb64_encrypt(unsigned char *in, unsigned char *out, long length,
+	     IDEA_KEY_SCHEDULE *schedule, unsigned char *ivec, int *num)
 	{
 	register unsigned long v0,v1,t;
 	register int n= *num;

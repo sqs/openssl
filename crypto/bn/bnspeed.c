@@ -1,5 +1,5 @@
 /* crypto/bn/bnspeed.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -58,6 +58,7 @@
 
 /* most of this code has been pilfered from my libdes speed.c program */
 
+#define BASENUM	1000000
 #undef PROG
 #define PROG bnspeed_main
 
@@ -93,7 +94,8 @@ struct tms {
 #include <sys/timeb.h>
 #endif
 
-#ifdef sun
+#if defined(sun) || defined(__ultrix)
+#define _POSIX_SOURCE
 #include <limits.h>
 #include <sys/param.h>
 #endif
@@ -131,8 +133,7 @@ static double Time_F();
 #define START	0
 #define STOP	1
 
-static double Time_F(s)
-int s;
+static double Time_F(int s)
 	{
 	double ret;
 #ifdef TIMES
@@ -169,63 +170,63 @@ int s;
 	}
 
 #define NUM_SIZES	5
-/*static int sizes[NUM_SIZES]={256,512,1024,2048};*/
-static int sizes[NUM_SIZES]={59,179,299,419,539};
+static int sizes[NUM_SIZES]={128,256,512,1024,2048};
+/*static int sizes[NUM_SIZES]={59,179,299,419,539}; */
 
 void do_mul(BIGNUM *r,BIGNUM *a,BIGNUM *b,BN_CTX *ctx); 
 
-int main(argc,argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 	{
 	BN_CTX *ctx;
-	BIGNUM *a,*b,*c,*r;
+	BIGNUM a,b,c;
 
 	ctx=BN_CTX_new();
-	a=BN_new();
-	b=BN_new();
-	c=BN_new();
-	r=BN_new();
+	BN_init(&a);
+	BN_init(&b);
+	BN_init(&c);
 
-	do_mul(a,b,c,ctx);
+	do_mul(&a,&b,&c,ctx);
 	}
 
-void do_mul(r,a,b,ctx)
-BIGNUM *r;
-BIGNUM *a;
-BIGNUM *b;
-BN_CTX *ctx;
+void do_mul(BIGNUM *r, BIGNUM *a, BIGNUM *b, BN_CTX *ctx)
 	{
 	int i,j,k;
 	double tm;
+	long num;
 
 	for (i=0; i<NUM_SIZES; i++)
 		{
+		num=BASENUM;
+		if (i) num/=(i*3);
 		BN_rand(a,sizes[i],1,0);
 		for (j=i; j<NUM_SIZES; j++)
 			{
 			BN_rand(b,sizes[j],1,0);
 			Time_F(START);
-			for (k=0; k<100000; k++)
-				BN_mul(r,b,a);
+			for (k=0; k<num; k++)
+				BN_mul(r,b,a,ctx);
 			tm=Time_F(STOP);
-			printf("mul %3d x %3d -> %7.4f\n",sizes[i],sizes[j],tm/10.0);
+			printf("mul %4d x %4d -> %8.3fms\n",sizes[i],sizes[j],tm*1000.0/num);
 			}
 		}
 
 	for (i=0; i<NUM_SIZES; i++)
 		{
+		num=BASENUM;
+		if (i) num/=(i*3);
 		BN_rand(a,sizes[i],1,0);
 		Time_F(START);
-		for (k=0; k<100000; k++)
+		for (k=0; k<num; k++)
 			BN_sqr(r,a,ctx);
 		tm=Time_F(STOP);
-		printf("sqr %3d x %3d -> %7.4f\n",sizes[i],sizes[i],tm/10.0);
+		printf("sqr %4d x %4d -> %8.3fms\n",sizes[i],sizes[i],tm*1000.0/num);
 		}
 
 	for (i=0; i<NUM_SIZES; i++)
 		{
-		BN_rand(a,sizes[i],1,0);
+		num=BASENUM/10;
+		if (i) num/=(i*3);
+		BN_rand(a,sizes[i]-1,1,0);
 		for (j=i; j<NUM_SIZES; j++)
 			{
 			BN_rand(b,sizes[j],1,0);
@@ -233,7 +234,7 @@ BN_CTX *ctx;
 			for (k=0; k<100000; k++)
 				BN_div(r, NULL, b, a,ctx);
 			tm=Time_F(STOP);
-			printf("div %3d / %3d -> %7.4f\n",sizes[j],sizes[i],tm/10.0);
+			printf("div %4d / %4d -> %8.3fms\n",sizes[j],sizes[i]-1,tm*1000.0/num);
 			}
 		}
 	}

@@ -1,5 +1,5 @@
 /* crypto/asn1/i2d_dhp.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,13 +63,11 @@
 #include "dh.h"
 
 /*
- * ASN1err(ASN1_F_D2I_DHPARAMS,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_X509_DHPARAMS_NEW,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_DHPARAMS,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_X509_DHPARAMS_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
-int i2d_DHparams(a,pp)
-DH *a;
-unsigned char **pp;
+int i2d_DHparams(DH *a, unsigned char **pp)
 	{
 	BIGNUM *num[3];
 	ASN1_INTEGER bs;

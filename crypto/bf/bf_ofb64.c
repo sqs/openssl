@@ -1,5 +1,5 @@
 /* crypto/bf/bf_ofb64.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,13 +63,8 @@
  * used.  The extra state information to record how much of the
  * 64bit block we have used is contained in *num;
  */
-void BF_ofb64_encrypt(in, out, length, schedule, ivec, num)
-unsigned char *in;
-unsigned char *out;
-long length;
-BF_KEY *schedule;
-unsigned char *ivec;
-int *num;
+void BF_ofb64_encrypt(unsigned char *in, unsigned char *out, long length,
+	     BF_KEY *schedule, unsigned char *ivec, int *num)
 	{
 	register BF_LONG v0,v1,t;
 	register int n= *num;
@@ -92,7 +87,7 @@ int *num;
 		{
 		if (n == 0)
 			{
-			BF_encrypt((BF_LONG *)ti,schedule,BF_ENCRYPT);
+			BF_encrypt((BF_LONG *)ti,schedule);
 			dp=(char *)d;
 			t=ti[0]; l2n(t,dp);
 			t=ti[1]; l2n(t,dp);

@@ -1,5 +1,5 @@
 /* crypto/asn1/x_sig.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -61,13 +61,11 @@
 #include "asn1_mac.h"
 
 /*
- * ASN1err(ASN1_F_D2I_X509_SIG,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_X509_SIG_NEW,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_X509_SIG,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_X509_SIG_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
-int i2d_X509_SIG(a,pp)
-X509_SIG *a;
-unsigned char **pp;
+int i2d_X509_SIG(X509_SIG *a, unsigned char **pp)
 	{
 	M_ASN1_I2D_vars(a);
 
@@ -82,10 +80,7 @@ unsigned char **pp;
 	M_ASN1_I2D_finish();
 	}
 
-X509_SIG *d2i_X509_SIG(a,pp,length)
-X509_SIG **a;
-unsigned char **pp;
-long length;
+X509_SIG *d2i_X509_SIG(X509_SIG **a, unsigned char **pp, long length)
 	{
 	M_ASN1_D2I_vars(a,X509_SIG *,X509_SIG_new);
 
@@ -96,9 +91,10 @@ long length;
 	M_ASN1_D2I_Finish(a,X509_SIG_free,ASN1_F_D2I_X509_SIG);
 	}
 
-X509_SIG *X509_SIG_new()
+X509_SIG *X509_SIG_new(void)
 	{
 	X509_SIG *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,X509_SIG);
 	M_ASN1_New(ret->algor,X509_ALGOR_new);
@@ -107,8 +103,7 @@ X509_SIG *X509_SIG_new()
 	M_ASN1_New_Error(ASN1_F_X509_SIG_NEW);
 	}
 
-void X509_SIG_free(a)
-X509_SIG *a;
+void X509_SIG_free(X509_SIG *a)
 	{
 	if (a == NULL) return;
 	X509_ALGOR_free(a->algor);

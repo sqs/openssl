@@ -1,5 +1,5 @@
 /* crypto/asn1/x_algor.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -61,14 +61,12 @@
 #include "asn1_mac.h"
 
 /*
- * ASN1err(ASN1_F_D2I_X509_ALGOR,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_X509_ALGOR_NEW,ASN1_R_EXPECTING_A_SEQUENCE);
- * ASN1err(ASN1_F_D2I_X509_ALGOR,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_X509_ALGOR,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_X509_ALGOR_NEW,ERR_R_EXPECTING_AN_ASN1_SEQUENCE);
+ * ASN1err(ASN1_F_D2I_X509_ALGOR,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
-int i2d_X509_ALGOR(a,pp)
-X509_ALGOR *a;
-unsigned char **pp;
+int i2d_X509_ALGOR(X509_ALGOR *a, unsigned char **pp)
 	{
 	M_ASN1_I2D_vars(a);
 
@@ -84,10 +82,7 @@ unsigned char **pp;
 	M_ASN1_I2D_finish();
 	}
 
-X509_ALGOR *d2i_X509_ALGOR(a,pp,length)
-X509_ALGOR **a;
-unsigned char **pp;
-long length;
+X509_ALGOR *d2i_X509_ALGOR(X509_ALGOR **a, unsigned char **pp, long length)
 	{
 	M_ASN1_D2I_vars(a,X509_ALGOR *,X509_ALGOR_new);
 
@@ -104,19 +99,19 @@ long length;
 	M_ASN1_D2I_Finish(a,X509_ALGOR_free,ASN1_F_D2I_X509_ALGOR);
 	}
 
-X509_ALGOR *X509_ALGOR_new()
+X509_ALGOR *X509_ALGOR_new(void)
 	{
 	X509_ALGOR *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,X509_ALGOR);
-	M_ASN1_New(ret->algorithm,ASN1_OBJECT_new);
+	ret->algorithm=OBJ_nid2obj(NID_undef);
 	ret->parameter=NULL;
 	return(ret);
 	M_ASN1_New_Error(ASN1_F_X509_ALGOR_NEW);
 	}
 
-void X509_ALGOR_free(a)
-X509_ALGOR *a;
+void X509_ALGOR_free(X509_ALGOR *a)
 	{
 	if (a == NULL) return;
 	ASN1_OBJECT_free(a->algorithm);

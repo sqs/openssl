@@ -1,5 +1,5 @@
 /* crypto/asn1/i2d_r_pu.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -64,13 +64,11 @@
 #include "asn1_mac.h"
 
 /*
- * ASN1err(ASN1_F_D2I_RSAPUBLICKEY,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_RSAPUBLICKEY,ERR_R_ASN1_LENGTH_MISMATCH);
  * ASN1err(ASN1_F_I2D_RSAPUBLICKEY,ASN1_R_UNKNOWN_ATTRIBUTE_TYPE);
  */
 
-int i2d_RSAPublicKey(a,pp)
-RSA *a;
-unsigned char **pp;
+int i2d_RSAPublicKey(RSA *a, unsigned char **pp)
 	{
 	BIGNUM *num[2];
 	ASN1_INTEGER bs;

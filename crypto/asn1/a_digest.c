@@ -1,5 +1,5 @@
 /* crypto/asn1/a_digest.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -66,12 +66,8 @@
 #include "x509.h"
 #include "buffer.h"
 
-int ASN1_digest(i2d,type,data,md,len)
-int (*i2d)();
-EVP_MD *type;
-char *data;
-unsigned char *md;
-unsigned int *len;
+int ASN1_digest(int (*i2d)(), EVP_MD *type, char *data, unsigned char *md,
+	     unsigned int *len)
 	{
 	EVP_MD_CTX ctx;
 	int i;

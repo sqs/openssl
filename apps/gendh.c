@@ -1,5 +1,5 @@
 /* apps/gendh.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -74,16 +74,14 @@
 #define PROG gendh_main
 
 #ifndef NOPROTO
-static void MS_CALLBACK dh_cb(int p, int n);
+static void MS_CALLBACK dh_cb(int p, int n, char *arg);
 static long dh_load_rand(char *names);
 #else
 static void MS_CALLBACK dh_cb();
 static long dh_load_rand();
 #endif
 
-int MAIN(argc, argv)
-int argc;
-char **argv;
+int MAIN(int argc, char **argv)
 	{
 	char buffer[200];
 	DH *dh=NULL;
@@ -97,7 +95,7 @@ char **argv;
 
 	if (bio_err == NULL)
 		if ((bio_err=BIO_new(BIO_s_file())) != NULL)
-			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE);
+			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE|BIO_FP_TEXT);
 
 	argv++;
 	argc--;
@@ -171,7 +169,7 @@ bad:
 
 	BIO_printf(bio_err,"Generating DH parameters, %d bit long strong prime, generator of %d\n",num,g);
 	BIO_printf(bio_err,"This is going to take a long time\n");
-	dh=DH_generate_parameters(num,g,dh_cb);
+	dh=DH_generate_parameters(num,g,dh_cb,(char *)bio_err);
 		
 	if (dh == NULL) goto end;
 
@@ -191,9 +189,7 @@ end:
 	EXIT(ret);
 	}
 
-static void MS_CALLBACK dh_cb(p, n)
-int p;
-int n;
+static void MS_CALLBACK dh_cb(int p, int n, char *arg)
 	{
 	char c='*';
 
@@ -201,15 +197,14 @@ int n;
 	if (p == 1) c='+';
 	if (p == 2) c='*';
 	if (p == 3) c='\n';
-	BIO_write(bio_err,&c,1);
-	BIO_flush(bio_err);
+	BIO_write((BIO *)arg,&c,1);
+	BIO_flush((BIO *)arg);
 #ifdef LINT
 	p=n;
 #endif
 	}
 
-static long dh_load_rand(name)
-char *name;
+static long dh_load_rand(char *name)
 	{
 	char *p,*n;
 	int last;

@@ -1,5 +1,5 @@
 /* crypto/bn/bn_shift.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -60,9 +60,7 @@
 #include "cryptlib.h"
 #include "bn_lcl.h"
 
-int BN_lshift1(r, a)
-BIGNUM *r;
-BIGNUM *a;
+int BN_lshift1(BIGNUM *r, BIGNUM *a)
 	{
 	register BN_ULONG *ap,*rp,t,c;
 	int i;
@@ -70,12 +68,12 @@ BIGNUM *a;
 	if (r != a)
 		{
 		r->neg=a->neg;
-		if (bn_expand(r,(a->top+1)*BN_BITS2) == NULL) return(0);
+		if (bn_wexpand(r,a->top+1) == NULL) return(0);
 		r->top=a->top;
 		}
 	else
 		{
-		if (bn_expand(r,(a->top+1)*BN_BITS2) == NULL) return(0);
+		if (bn_wexpand(r,a->top+1) == NULL) return(0);
 		}
 	ap=a->d;
 	rp=r->d;
@@ -94,9 +92,7 @@ BIGNUM *a;
 	return(1);
 	}
 
-int BN_rshift1(r, a)
-BIGNUM *r;
-BIGNUM *a;
+int BN_rshift1(BIGNUM *r, BIGNUM *a)
 	{
 	BN_ULONG *ap,*rp,t,c;
 	int i;
@@ -108,7 +104,7 @@ BIGNUM *a;
 		}
 	if (a != r)
 		{
-		if (bn_expand(r,a->top*BN_BITS2) == NULL) return(0);
+		if (bn_wexpand(r,a->top) == NULL) return(0);
 		r->top=a->top;
 		r->neg=a->neg;
 		}
@@ -125,17 +121,14 @@ BIGNUM *a;
 	return(1);
 	}
 
-int BN_lshift(r, a, n)
-BIGNUM *r;
-BIGNUM *a;
-int n;
+int BN_lshift(BIGNUM *r, BIGNUM *a, int n)
 	{
 	int i,nw,lb,rb;
 	BN_ULONG *t,*f;
 	BN_ULONG l;
 
 	r->neg=a->neg;
-	if (bn_expand(r,(a->top*BN_BITS2)+n) == NULL) return(0);
+	if (bn_wexpand(r,a->top+(n/BN_BITS2)+1) == NULL) return(0);
 	nw=n/BN_BITS2;
 	lb=n%BN_BITS2;
 	rb=BN_BITS2-lb;
@@ -160,10 +153,7 @@ int n;
 	return(1);
 	}
 
-int BN_rshift(r, a, n)
-BIGNUM *r;
-BIGNUM *a;
-int n;
+int BN_rshift(BIGNUM *r, BIGNUM *a, int n)
 	{
 	int i,j,nw,lb,rb;
 	BN_ULONG *t,*f;
@@ -180,7 +170,7 @@ int n;
 	if (r != a)
 		{
 		r->neg=a->neg;
-		if (bn_expand(r,(a->top-nw+1)*BN_BITS2) == NULL) return(0);
+		if (bn_wexpand(r,a->top-nw+1) == NULL) return(0);
 		}
 
 	f= &(a->d[nw]);

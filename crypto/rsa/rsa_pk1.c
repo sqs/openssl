@@ -74,11 +74,8 @@ int RSA_padding_check_none();
 
 #endif
 
-int RSA_padding_add_PKCS1_type_1(to,tlen,from,flen)
-unsigned char *to;
-int tlen;
-unsigned char *from;
-int flen;
+int RSA_padding_add_PKCS1_type_1(unsigned char *to, int tlen,
+	     unsigned char *from, int flen)
 	{
 	int j;
 	unsigned char *p;
@@ -103,17 +100,14 @@ int flen;
 	return(1);
 	}
 
-int RSA_padding_check_PKCS1_type_1(to,tlen,from,flen)
-unsigned char *to;
-int tlen;
-unsigned char *from;
-int flen;
+int RSA_padding_check_PKCS1_type_1(unsigned char *to, int tlen,
+	     unsigned char *from, int flen, int num)
 	{
 	int i,j;
 	unsigned char *p;
 
 	p=from;
-	if (*(p++) != 01)
+	if ((num != (flen+1)) || (*(p++) != 01))
 		{
 		RSAerr(RSA_F_RSA_PADDING_CHECK_PKCS1_TYPE_1,RSA_R_BLOCK_TYPE_IS_NOT_01);
 		return(-1);
@@ -153,11 +147,8 @@ int flen;
 	return(j);
 	}
 
-int RSA_padding_add_PKCS1_type_2(to,tlen,from,flen)
-unsigned char *to;
-int tlen;
-unsigned char *from;
-int flen;
+int RSA_padding_add_PKCS1_type_2(unsigned char *to, int tlen,
+	     unsigned char *from, int flen)
 	{
 	int i,j;
 	unsigned char *p;
@@ -192,21 +183,21 @@ int flen;
 	return(1);
 	}
 
-int RSA_padding_check_PKCS1_type_2(to,tlen,from,flen)
-unsigned char *to;
-int tlen;
-unsigned char *from;
-int flen;
+int RSA_padding_check_PKCS1_type_2(unsigned char *to, int tlen,
+	     unsigned char *from, int flen, int num)
 	{
 	int i,j;
 	unsigned char *p;
 
 	p=from;
-	if (*(p++) != 02)
+	if ((num != (flen+1)) || (*(p++) != 02))
 		{
 		RSAerr(RSA_F_RSA_PADDING_CHECK_PKCS1_TYPE_2,RSA_R_BLOCK_TYPE_IS_NOT_02);
 		return(-1);
 		}
+#ifdef PKCS1_CHECK
+	return(num-11);
+#endif
 
 	/* scan over padding data */
 	j=flen-1; /* one for type. */

@@ -1,5 +1,5 @@
 /* crypto/mdc2/mdc2_one.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -60,10 +60,7 @@
 #include "cryptlib.h"
 #include "mdc2.h"
 
-unsigned char *MDC2(d, n, md)
-unsigned char *d;
-unsigned long n;
-unsigned char *md;
+unsigned char *MDC2(unsigned char *d, unsigned long n, unsigned char *md)
 	{
 	MDC2_CTX c;
 	static unsigned char m[MDC2_DIGEST_LENGTH];

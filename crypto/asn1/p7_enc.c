@@ -1,5 +1,5 @@
 /* crypto/asn1/p7_enc.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,13 +62,11 @@
 #include "x509.h"
 
 /*
- * ASN1err(ASN1_F_PKCS7_ENCRYPT_NEW,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_D2I_PKCS7_ENCRYPT,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_PKCS7_ENCRYPT_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_PKCS7_ENCRYPT,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
-int i2d_PKCS7_ENCRYPT(a,pp)
-PKCS7_ENCRYPT *a;
-unsigned char **pp;
+int i2d_PKCS7_ENCRYPT(PKCS7_ENCRYPT *a, unsigned char **pp)
 	{
 	M_ASN1_I2D_vars(a);
 
@@ -83,10 +81,8 @@ unsigned char **pp;
 	M_ASN1_I2D_finish();
 	}
 
-PKCS7_ENCRYPT *d2i_PKCS7_ENCRYPT(a,pp,length)
-PKCS7_ENCRYPT **a;
-unsigned char **pp;
-long length;
+PKCS7_ENCRYPT *d2i_PKCS7_ENCRYPT(PKCS7_ENCRYPT **a, unsigned char **pp,
+	     long length)
 	{
 	M_ASN1_D2I_vars(a,PKCS7_ENCRYPT *,PKCS7_ENCRYPT_new);
 
@@ -98,9 +94,10 @@ long length;
 	M_ASN1_D2I_Finish(a,PKCS7_ENCRYPT_free,ASN1_F_D2I_PKCS7_ENCRYPT);
 	}
 
-PKCS7_ENCRYPT *PKCS7_ENCRYPT_new()
+PKCS7_ENCRYPT *PKCS7_ENCRYPT_new(void)
 	{
 	PKCS7_ENCRYPT *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,PKCS7_ENCRYPT);
 	M_ASN1_New(ret->version,ASN1_INTEGER_new);
@@ -109,8 +106,7 @@ PKCS7_ENCRYPT *PKCS7_ENCRYPT_new()
 	M_ASN1_New_Error(ASN1_F_PKCS7_ENCRYPT_NEW);
 	}
 
-void PKCS7_ENCRYPT_free(a)
-PKCS7_ENCRYPT *a;
+void PKCS7_ENCRYPT_free(PKCS7_ENCRYPT *a)
 	{
 	if (a == NULL) return;
 	ASN1_INTEGER_free(a->version);

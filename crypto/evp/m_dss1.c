@@ -1,5 +1,5 @@
 /* crypto/evp/m_dss1.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -71,9 +71,11 @@ static EVP_MD dss1_md=
 	SHA1_Update,
 	SHA1_Final,
 	EVP_PKEY_DSA_method,
+	SHA_CBLOCK,
+	sizeof(EVP_MD *)+sizeof(SHA_CTX),
 	};
 
-EVP_MD *EVP_dss1()
+EVP_MD *EVP_dss1(void)
 	{
 	return(&dss1_md);
 	}

@@ -1,5 +1,5 @@
 /* crypto/x509/x509rset.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,25 +63,19 @@
 #include "evp.h"
 #include "x509.h"
 
-int X509_REQ_set_version(x,version)
-X509_REQ *x;
-long version;
+int X509_REQ_set_version(X509_REQ *x, long version)
 	{
 	if (x == NULL) return(0);
 	return(ASN1_INTEGER_set(x->req_info->version,version));
 	}
 
-int X509_REQ_set_subject_name(x,name)
-X509_REQ *x;
-X509_NAME *name;
+int X509_REQ_set_subject_name(X509_REQ *x, X509_NAME *name)
 	{
 	if ((x == NULL) || (x->req_info == NULL)) return(0);
 	return(X509_NAME_set(&x->req_info->subject,name));
 	}
 
-int X509_REQ_set_pubkey(x,pkey)
-X509_REQ *x;
-EVP_PKEY *pkey;
+int X509_REQ_set_pubkey(X509_REQ *x, EVP_PKEY *pkey)
 	{
 	if ((x == NULL) || (x->req_info == NULL)) return(0);
 	return(X509_PUBKEY_set(&x->req_info->pubkey,pkey));

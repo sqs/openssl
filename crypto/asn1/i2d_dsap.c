@@ -1,5 +1,5 @@
 /* crypto/asn1/i2d_dsap.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,12 +63,10 @@
 #include "dsa.h"
 
 /*
- * ASN1err(ASN1_F_D2I_DSAPARAMS,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_DSAPARAMS,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
-int i2d_DSAparams(a,pp)
-DSA *a;
-unsigned char **pp;
+int i2d_DSAparams(DSA *a, unsigned char **pp)
 	{
 	BIGNUM *num[3];
 	ASN1_INTEGER bs;

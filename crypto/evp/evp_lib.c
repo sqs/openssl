@@ -61,9 +61,7 @@
 #include "evp.h"
 #include "objects.h"
 
-int EVP_CIPHER_param_to_asn1(c,type)
-EVP_CIPHER_CTX *c;
-ASN1_TYPE *type;
+int EVP_CIPHER_param_to_asn1(EVP_CIPHER_CTX *c, ASN1_TYPE *type)
 	{
 	int ret;
 
@@ -74,9 +72,7 @@ ASN1_TYPE *type;
 	return(ret);
 	}
 
-int EVP_CIPHER_asn1_to_param(c,type)
-EVP_CIPHER_CTX *c;
-ASN1_TYPE *type;
+int EVP_CIPHER_asn1_to_param(EVP_CIPHER_CTX *c, ASN1_TYPE *type)
 	{
 	int ret;
 
@@ -87,9 +83,7 @@ ASN1_TYPE *type;
 	return(ret);
 	}
 
-int EVP_CIPHER_get_asn1_iv(c,type)
-EVP_CIPHER_CTX *c;
-ASN1_TYPE *type;
+int EVP_CIPHER_get_asn1_iv(EVP_CIPHER_CTX *c, ASN1_TYPE *type)
 	{
 	int i=0,l;
 
@@ -97,14 +91,15 @@ ASN1_TYPE *type;
 		{
 		l=EVP_CIPHER_CTX_iv_length(c);
 		i=ASN1_TYPE_get_octetstring(type,c->oiv,l);
-		memcpy(c->iv,c->oiv,l);
+		if (i != l)
+			return(-1);
+		else if (i > 0)
+			memcpy(c->iv,c->oiv,l);
 		}
 	return(i);
 	}
 
-int EVP_CIPHER_set_asn1_iv(c,type)
-EVP_CIPHER_CTX *c;
-ASN1_TYPE *type;
+int EVP_CIPHER_set_asn1_iv(EVP_CIPHER_CTX *c, ASN1_TYPE *type)
 	{
 	int i=0,j;
 

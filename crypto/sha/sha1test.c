@@ -1,5 +1,5 @@
 /* crypto/sha/sha1test.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -93,9 +93,7 @@ static char *pt(unsigned char *md);
 static char *pt();
 #endif
 
-int main(argc,argv)
-int argc;
-char *argv[];
+int main(int argc, char *argv[])
 	{
 	int i,err=0;
 	unsigned char **P,**R;
@@ -133,7 +131,7 @@ char *argv[];
 	r=bigret;
 	if (strcmp(p,r) != 0)
 		{
-		printf("error calculating SHA1 on '%s'\n",p);
+		printf("error calculating SHA1 on 'a' * 1000\n");
 		printf("got %s instead of %s\n",p,r);
 		err++;
 		}
@@ -143,8 +141,7 @@ char *argv[];
 	return(0);
 	}
 
-static char *pt(md)
-unsigned char *md;
+static char *pt(unsigned char *md)
 	{
 	int i;
 	static char buf[80];

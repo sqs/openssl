@@ -1,5 +1,5 @@
 /* crypto/dh/dhtest.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -59,8 +59,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef WIN16
-#define APPS_WIN16
+#ifdef WINDOWS
+#include "../bio/bss_file.c" 
 #endif
 #include "crypto.h"
 #include "bio.h"
@@ -74,21 +74,19 @@
 #endif
 
 #ifndef NOPROTO
-static void MS_CALLBACK cb(int p, int n);
+static void MS_CALLBACK cb(int p, int n, char *arg);
 #else
 static void MS_CALLBACK cb();
 #endif
 
-#ifdef WIN16
+#ifdef NO_STDIO
 #define APPS_WIN16
-#include "../bio/bss_file.c"
+#include "bss_file.c"
 #endif
 
 BIO *out=NULL;
 
-int main(argc,argv)
-int argc;
-char *argv[];
+int main(int argc, char *argv[])
 	{
 	DH *a,*b;
 	char buf[12];
@@ -103,7 +101,7 @@ char *argv[];
 	if (out == NULL) exit(1);
 	BIO_set_fp(out,stdout,BIO_NOCLOSE);
 
-	a=DH_generate_parameters(64,DH_GENERATOR_5,cb);
+	a=DH_generate_parameters(64,DH_GENERATOR_5,cb,(char *)out);
 	if (a == NULL) goto err;
 
 	BIO_puts(out,"\np    =");
@@ -170,9 +168,7 @@ err:
 	return(ret);
 	}
 
-static void MS_CALLBACK cb(p, n)
-int p;
-int n;
+static void MS_CALLBACK cb(int p, int n, char *arg)
 	{
 	char c='*';
 
@@ -180,7 +176,8 @@ int n;
 	if (p == 1) c='+';
 	if (p == 2) c='*';
 	if (p == 3) c='\n';
-	BIO_write(out,&c,1);
+	BIO_write((BIO *)arg,&c,1);
+	BIO_flush((BIO *)arg);
 #ifdef LINT
 	p=n;
 #endif

@@ -1,5 +1,5 @@
 /* crypto/asn1/a_dup.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,10 +62,7 @@
 
 #define READ_CHUNK   2048
 
-char *ASN1_dup(i2d,d2i,x)
-int (*i2d)();
-char *(*d2i)();
-char *x;
+char *ASN1_dup(int (*i2d)(), char *(*d2i)(), char *x)
 	{
 	unsigned char *b,*p;
 	long i;

@@ -1,5 +1,5 @@
 /* crypto/mdc2/mdc2test.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -71,9 +71,7 @@ static unsigned char pad2[16]={
 	0x35,0xD8,0x7A,0xFE,0xAB,0x33,0xBE,0xE2
 	};
 
-int main(argc,argv)
-int argc;
-char *argv[];
+int main(int argc, char *argv[])
 	{
 	int ret=0;
 	unsigned char md[MDC2_DIGEST_LENGTH];

@@ -1,5 +1,5 @@
 /* crypto/asn1/i2d_pr.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,9 +62,7 @@
 #include "evp.h"
 #include "objects.h"
 
-int i2d_PrivateKey(a,pp)
-EVP_PKEY *a;
-unsigned char **pp;
+int i2d_PrivateKey(EVP_PKEY *a, unsigned char **pp)
 	{
 #ifndef NO_RSA
 	if (a->type == EVP_PKEY_RSA)

@@ -1,5 +1,5 @@
 /* crypto/evp/encode.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -110,20 +110,15 @@ static unsigned char data_ascii2bin[128]={
 	0x31,0x32,0x33,0xFF,0xFF,0xFF,0xFF,0xFF,
 	};
 
-void EVP_EncodeInit(ctx)
-EVP_ENCODE_CTX *ctx;
+void EVP_EncodeInit(EVP_ENCODE_CTX *ctx)
 	{
 	ctx->length=48;
 	ctx->num=0;
 	ctx->line_num=0;
 	}
 
-void EVP_EncodeUpdate(ctx,out,outl,in,inl)
-EVP_ENCODE_CTX *ctx;
-unsigned char *out;
-int *outl;
-unsigned char *in;
-int inl;
+void EVP_EncodeUpdate(EVP_ENCODE_CTX *ctx, unsigned char *out, int *outl,
+	     unsigned char *in, int inl)
 	{
 	int i,j;
 	unsigned int total=0;
@@ -165,10 +160,7 @@ int inl;
 	*outl=total;
 	}
 
-void EVP_EncodeFinal(ctx,out,outl)
-EVP_ENCODE_CTX *ctx;
-unsigned char *out;
-int *outl;
+void EVP_EncodeFinal(EVP_ENCODE_CTX *ctx, unsigned char *out, int *outl)
 	{
 	unsigned int ret=0;
 
@@ -182,9 +174,7 @@ int *outl;
 	*outl=ret;
 	}
 
-int EVP_EncodeBlock(t,f,dlen)
-unsigned char *t,*f;
-int dlen;
+int EVP_EncodeBlock(unsigned char *t, unsigned char *f, int dlen)
 	{
 	int i,ret=0;
 	unsigned long l;
@@ -218,31 +208,28 @@ int dlen;
 	return(ret);
 	}
 
-void EVP_DecodeInit(ctx)
-EVP_ENCODE_CTX *ctx;
+void EVP_DecodeInit(EVP_ENCODE_CTX *ctx)
 	{
 	ctx->length=30;
 	ctx->num=0;
 	ctx->line_num=0;
+	ctx->expect_nl=0;
 	}
 
 /* -1 for error
  *  0 for last line
  *  1 for full line
  */
-int EVP_DecodeUpdate(ctx,out,outl,in,inl)
-EVP_ENCODE_CTX *ctx;
-unsigned char *out;
-int *outl;
-unsigned char *in;
-int inl;
+int EVP_DecodeUpdate(EVP_ENCODE_CTX *ctx, unsigned char *out, int *outl,
+	     unsigned char *in, int inl)
 	{
-	int seof= -1,eof=0,rv= -1,ret=0,i,v,tmp,n,ln,tmp2;
+	int seof= -1,eof=0,rv= -1,ret=0,i,v,tmp,n,ln,tmp2,exp_nl;
 	unsigned char *d;
 
 	n=ctx->num;
 	d=ctx->enc_data;
 	ln=ctx->line_num;
+	exp_nl=ctx->expect_nl;
 
 	/* last line of input. */
 	if ((inl == 0) || ((n == 0) && (conv_ascii2bin(in[0]) == B64_EOF)))
@@ -280,7 +267,16 @@ int inl;
 			}
 
 		/* eoln */
-		if (v == B64_EOLN) ln=0;
+		if (v == B64_EOLN)
+			{
+			ln=0;
+			if (exp_nl)
+				{
+				exp_nl=0;
+				continue;
+				}
+			}
+		exp_nl=0;
 
 		/* If we are at the end of input and it looks like a
 		 * line, process it. */
@@ -289,6 +285,10 @@ int inl;
 
 		if ((v == B64_EOF) || (n >= 64))
 			{
+			/* This is needed to work correctly on 64 byte input
+			 * lines.  We process the line and then need to
+			 * accept the '\n' */
+			if ((v != B64_EOF) && (n >= 64)) exp_nl=1;
 			tmp2=v;
 			if (n > 0)
 				{
@@ -322,12 +322,11 @@ end:
 	*outl=ret;
 	ctx->num=n;
 	ctx->line_num=ln;
+	ctx->expect_nl=exp_nl;
 	return(rv);
 	}
 
-int EVP_DecodeBlock(t,f,n)
-unsigned char *t,*f;
-int n;
+int EVP_DecodeBlock(unsigned char *t, unsigned char *f, int n)
 	{
 	int i,ret=0,a,b,c,d;
 	unsigned long l;
@@ -367,10 +366,7 @@ int n;
 	return(ret);
 	}
 
-int EVP_DecodeFinal(ctx,out,outl)
-EVP_ENCODE_CTX *ctx;
-unsigned char *out;
-int *outl;
+int EVP_DecodeFinal(EVP_ENCODE_CTX *ctx, unsigned char *out, int *outl)
 	{
 	int i;
 
@@ -388,9 +384,7 @@ int *outl;
 	}
 
 #ifdef undef
-int EVP_DecodeValid(buf,len)
-unsigned char *buf;
-int len;
+int EVP_DecodeValid(unsigned char *buf, int len)
 	{
 	int i,num=0,bad=0;
 

@@ -1,5 +1,5 @@
 /* crypto/asn1/p7_evp.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,13 +62,11 @@
 #include "x509.h"
 
 /*
- * ASN1err(ASN1_F_PKCS7_ENVELOPE_NEW,ASN1_R_LENGTH_MISMATCH);
- * ASN1err(ASN1_F_D2I_PKCS7_ENVELOPE,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_PKCS7_ENVELOPE_NEW,ERR_R_ASN1_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_PKCS7_ENVELOPE,ERR_R_ASN1_LENGTH_MISMATCH);
  */
 
-int i2d_PKCS7_ENVELOPE(a,pp)
-PKCS7_ENVELOPE *a;
-unsigned char **pp;
+int i2d_PKCS7_ENVELOPE(PKCS7_ENVELOPE *a, unsigned char **pp)
 	{
 	M_ASN1_I2D_vars(a);
 
@@ -85,25 +83,25 @@ unsigned char **pp;
 	M_ASN1_I2D_finish();
 	}
 
-PKCS7_ENVELOPE *d2i_PKCS7_ENVELOPE(a,pp,length)
-PKCS7_ENVELOPE **a;
-unsigned char **pp;
-long length;
+PKCS7_ENVELOPE *d2i_PKCS7_ENVELOPE(PKCS7_ENVELOPE **a, unsigned char **pp,
+	     long length)
 	{
 	M_ASN1_D2I_vars(a,PKCS7_ENVELOPE *,PKCS7_ENVELOPE_new);
 
 	M_ASN1_D2I_Init();
 	M_ASN1_D2I_start_sequence();
 	M_ASN1_D2I_get(ret->version,d2i_ASN1_INTEGER);
-	M_ASN1_D2I_get_set(ret->recipientinfo,d2i_PKCS7_RECIP_INFO);
+	M_ASN1_D2I_get_set(ret->recipientinfo,d2i_PKCS7_RECIP_INFO,
+		PKCS7_RECIP_INFO_free);
 	M_ASN1_D2I_get(ret->enc_data,d2i_PKCS7_ENC_CONTENT);
 
 	M_ASN1_D2I_Finish(a,PKCS7_ENVELOPE_free,ASN1_F_D2I_PKCS7_ENVELOPE);
 	}
 
-PKCS7_ENVELOPE *PKCS7_ENVELOPE_new()
+PKCS7_ENVELOPE *PKCS7_ENVELOPE_new(void)
 	{
 	PKCS7_ENVELOPE *ret=NULL;
+	ASN1_CTX c;
 
 	M_ASN1_New_Malloc(ret,PKCS7_ENVELOPE);
 	M_ASN1_New(ret->version,ASN1_INTEGER_new);
@@ -113,8 +111,7 @@ PKCS7_ENVELOPE *PKCS7_ENVELOPE_new()
 	M_ASN1_New_Error(ASN1_F_PKCS7_ENVELOPE_NEW);
 	}
 
-void PKCS7_ENVELOPE_free(a)
-PKCS7_ENVELOPE *a;
+void PKCS7_ENVELOPE_free(PKCS7_ENVELOPE *a)
 	{
 	if (a == NULL) return;
 	ASN1_INTEGER_free(a->version);

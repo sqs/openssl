@@ -1,5 +1,5 @@
 /* crypto/asn1/a_utctm.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -65,19 +65,15 @@
  * ASN1err(ASN1_F_D2I_ASN1_UTCTIME,ASN1_R_EXPECTING_A_UTCTIME);
  */
 
-int i2d_ASN1_UTCTIME(a,pp)
-ASN1_UTCTIME *a;
-unsigned char **pp;
+int i2d_ASN1_UTCTIME(ASN1_UTCTIME *a, unsigned char **pp)
 	{
 	return(i2d_ASN1_bytes((ASN1_STRING *)a,pp,
 		V_ASN1_UTCTIME,V_ASN1_UNIVERSAL));
 	}
 
 
-ASN1_UTCTIME *d2i_ASN1_UTCTIME(a, pp, length)
-ASN1_UTCTIME **a;
-unsigned char **pp;
-long length;
+ASN1_UTCTIME *d2i_ASN1_UTCTIME(ASN1_UTCTIME **a, unsigned char **pp,
+	     long length)
 	{
 	ASN1_UTCTIME *ret=NULL;
 
@@ -85,7 +81,7 @@ long length;
 		V_ASN1_UTCTIME,V_ASN1_UNIVERSAL);
 	if (ret == NULL)
 		{
-		ASN1err(ASN1_F_D2I_ASN1_UTCTIME,ASN1_R_ERROR_STACK);
+		ASN1err(ASN1_F_D2I_ASN1_UTCTIME,ERR_R_NESTED_ASN1_ERROR);
 		return(NULL);
 		}
 	if (!ASN1_UTCTIME_check(ret))
@@ -101,8 +97,7 @@ err:
 	return(NULL);
 	}
 
-int ASN1_UTCTIME_check(d)
-ASN1_UTCTIME *d;
+int ASN1_UTCTIME_check(ASN1_UTCTIME *d)
 	{
 	static int min[8]={ 0, 1, 1, 0, 0, 0, 0, 0};
 	static int max[8]={99,12,31,23,59,59,12,59};
@@ -152,13 +147,31 @@ err:
 	return(0);
 	}
 
-ASN1_UTCTIME *ASN1_UTCTIME_set(s, t)
-ASN1_UTCTIME *s;
-time_t t;
+int ASN1_UTCTIME_set_string(ASN1_UTCTIME *s, char *str)
+	{
+	ASN1_UTCTIME t;
+
+	t.type=V_ASN1_UTCTIME;
+	t.length=strlen(str);
+	t.data=(unsigned char *)str;
+	if (ASN1_UTCTIME_check(&t))
+		{
+		if (s != NULL)
+			{
+			ASN1_STRING_set((ASN1_STRING *)s,
+				(unsigned char *)str,t.length);
+			}
+		return(1);
+		}
+	else
+		return(0);
+	}
+
+ASN1_UTCTIME *ASN1_UTCTIME_set(ASN1_UTCTIME *s, time_t t)
 	{
 	char *p;
 	struct tm *ts;
-#if defined(THREADS)
+#if defined(THREADS) && !defined(WIN32)
 	struct tm data;
 #endif
 
@@ -167,7 +180,7 @@ time_t t;
 	if (s == NULL)
 		return(NULL);
 
-#if defined(THREADS)
+#if defined(THREADS) && !defined(WIN32)
 	ts=(struct tm *)gmtime_r(&t,&data);
 #else
 	ts=(struct tm *)gmtime(&t);

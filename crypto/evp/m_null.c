@@ -1,5 +1,5 @@
 /* crypto/evp/m_null.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,7 +62,7 @@
 #include "objects.h"
 #include "x509.h"
 
-static void function()
+static void function(void)
 	{
 	}
 
@@ -75,10 +75,12 @@ static EVP_MD null_md=
 	function,
 	function,
 	
-	EVP_PKEY_NULL_method
+	EVP_PKEY_NULL_method,
+	0,
+	sizeof(EVP_MD *),
 	};
 
-EVP_MD *EVP_md_null()
+EVP_MD *EVP_md_null(void)
 	{
 	return(&null_md);
 	}

@@ -1,5 +1,5 @@
 /* crypto/asn1/d2i_dsap.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -64,16 +64,13 @@
 #include "asn1_mac.h"
 
 /*
- * ASN1err(ASN1_F_D2I_DSAPARAMS,ASN1_R_LENGTH_MISMATCH);
+ * ASN1err(ASN1_F_D2I_DSAPARAMS,ERR_R_ASN1_LENGTH_MISMATCH);
  * ASN1err(ASN1_F_I2D_DSAPARAMS,ASN1_R_UNKNOWN_ATTRIBUTE_TYPE);
  */
 
-DSA *d2i_DSAparams(a,pp,length)
-DSA **a;
-unsigned char **pp;
-long length;
+DSA *d2i_DSAparams(DSA **a, unsigned char **pp, long length)
 	{
-	int i=ASN1_R_ERROR_STACK;
+	int i=ERR_R_NESTED_ASN1_ERROR;
 	ASN1_INTEGER *bs=NULL;
 	M_ASN1_D2I_vars(a,DSA *,DSA_new);
 

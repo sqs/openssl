@@ -1,5 +1,5 @@
 /* crypto/des/ncbc_enc.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -58,13 +58,8 @@
 
 #include "des_locl.h"
 
-void des_ncbc_encrypt(input, output, length, schedule, ivec, enc)
-des_cblock (*input);
-des_cblock (*output);
-long length;
-des_key_schedule schedule;
-des_cblock (*ivec);
-int enc;
+void des_ncbc_encrypt(des_cblock (*input), des_cblock (*output), long length,
+	     des_key_schedule schedule, des_cblock (*ivec), int enc)
 	{
 	register DES_LONG tin0,tin1;
 	register DES_LONG tout0,tout1,xor0,xor1;
@@ -117,17 +112,6 @@ int enc;
 			tout1=tin[1]^xor1;
 			l2c(tout0,out);
 			l2c(tout1,out);
-			xor0=tin0;
-			xor1=tin1;
-			}
-		if (l != -8)
-			{
-			c2l(in,tin0); tin[0]=tin0;
-			c2l(in,tin1); tin[1]=tin1;
-			des_encrypt((DES_LONG *)tin,schedule,DES_DECRYPT);
-			tout0=tin[0]^xor0;
-			tout1=tin[1]^xor1;
-			l2cn(tout0,tout1,out,l+8);
 			xor0=tin0;
 			xor1=tin1;
 			}

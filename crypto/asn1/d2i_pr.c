@@ -1,5 +1,5 @@
 /* crypto/asn1/d2i_pr.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,11 +63,8 @@
 #include "objects.h"
 #include "x509.h"
 
-EVP_PKEY *d2i_PrivateKey(type,a,pp,length)
-int type;
-EVP_PKEY **a;
-unsigned char **pp;
-long length;
+EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **a, unsigned char **pp,
+	     long length)
 	{
 	EVP_PKEY *ret;
 
@@ -106,7 +103,7 @@ long length;
 	default:
 		ASN1err(ASN1_F_D2I_PRIVATEKEY,ASN1_R_UNKNOWN_PUBLIC_KEY_TYPE);
 		goto err;
-		break;
+		/* break; */
 		}
 	if (a != NULL) (*a)=ret;
 	return(ret);
