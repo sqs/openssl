@@ -1,5 +1,5 @@
 /* crypto/conf/test.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -66,7 +66,7 @@ main()
 	long eline;
 	char *s,*s2;
 
-	conf=CONF_load(NULL,"ssleay.conf",&eline);
+	conf=CONF_load(NULL,"openssl.conf",&eline);
 	if (conf == NULL)
 		{
 		ERR_load_crypto_strings();
