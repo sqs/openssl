@@ -1,5 +1,5 @@
 /* ssl/s2_clnt.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -57,9 +57,6 @@
  */
 
 #include <stdio.h>
-#ifndef NO_MD5
-#include "md5.h"
-#endif
 #include "rand.h"
 #include "buffer.h"
 #include "objects.h"
@@ -67,6 +64,7 @@
 #include "evp.h"
 
 #ifndef NOPROTO
+static SSL_METHOD *ssl2_get_client_method(int ver);
 static int get_server_finished(SSL *s);
 static int get_server_verify(SSL *s);
 static int get_server_hello(SSL *s);
@@ -77,6 +75,7 @@ static int client_certificate(SSL *s);
 static int ssl_rsa_public_encrypt(CERT *c, int len, unsigned char *from,
 	unsigned char *to,int padding);
 #else
+static SSL_METHOD *ssl2_get_client_method();
 static int get_server_finished();
 static int get_server_verify();
 static int get_server_hello();
@@ -92,7 +91,7 @@ static int ssl_rsa_public_encrypt();
 static SSL_METHOD *ssl2_get_client_method(ver)
 int ver;
 	{
-	if (ver == 2)
+	if (ver == SSL2_VERSION)
 		return(SSLv2_client_method());
 	else
 		return(NULL);
@@ -125,7 +124,7 @@ SSL *s;
 
 	RAND_seed((unsigned char *)&l,sizeof(l));
 	ERR_clear_error();
-	errno=0;
+	clear_sys_error();
 
 	if (s->info_callback != NULL)
 		cb=s->info_callback;
@@ -149,7 +148,7 @@ SSL *s;
 
 			if (cb != NULL) cb(s,SSL_CB_HANDSHAKE_START,1);
 
-			s->version=2;
+			s->version=SSL2_VERSION;
 			s->type=SSL_ST_CONNECT;
 
 			buf=s->init_buf;
@@ -262,6 +261,7 @@ SSL *s;
 			 */
 
 			ssl_update_cache(s,SSL_SESS_CACHE_CLIENT);
+			if (s->hit) s->ctx->sess_hit++;
 
 			ret=1;
 			/* s->server=0; */
@@ -270,7 +270,7 @@ SSL *s;
 			if (cb != NULL) cb(s,SSL_CB_HANDSHAKE_DONE,1);
 
 			goto end;
-			break;
+			/* break; */
 		default:
 			SSLerr(SSL_F_SSL2_CONNECT,SSL_R_UNKNOWN_STATE);
 			return(-1);
@@ -298,7 +298,7 @@ SSL *s;
 	unsigned char *buf;
 	unsigned char *p;
 	int i,j;
-	STACK *sk,*cl;
+	STACK *sk=NULL,*cl;
 
 	buf=(unsigned char *)s->init_buf->data;
 	p=buf;
@@ -350,7 +350,7 @@ SSL *s;
 			}
 		if (s->s2->tmp.cert_type != 0)
 			{
-			if (!(s->ctx->options &
+			if (!(s->options &
 				SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG))
 				{
 				SSLerr(SSL_F_GET_SERVER_HELLO,SSL_R_REUSE_CERT_TYPE_NOT_ZERO);
@@ -448,7 +448,7 @@ SSL *s;
 	 * cert, Free's it before we increment the reference count. */
 	CRYPTO_w_lock(CRYPTO_LOCK_X509);
 	s->session->peer=s->session->cert->key->x509;
-	s->session->peer->references++;
+	CRYPTO_add(&s->session->peer->references,1,CRYPTO_LOCK_X509);
 	CRYPTO_w_unlock(CRYPTO_LOCK_X509);
 
 	s->s2->conn_id_length=s->s2->tmp.conn_id_length;
@@ -589,6 +589,11 @@ SSL *s;
 			SSLerr(SSL_F_CLIENT_MASTER_KEY,SSL_R_PUBLIC_KEY_ENCRYPT_ERROR);
 			return(-1);
 			}
+#ifdef PKCS1_CHECK
+		if (s->options & SSL_OP_PKCS1_CHECK_1) d[1]++;
+		if (s->options & SSL_OP_PKCS1_CHECK_2)
+			sess->master_key[clear]++;
+#endif
 		s2n(enc,p);
 		d+=enc;
 		karg=sess->key_arg_length;	
@@ -736,7 +741,7 @@ SSL *s;
 		/* ok, now we calculate the checksum
 		 * do it first so we can reuse buf :-) */
 		p=buf;
-		EVP_SignInit(&ctx,EVP_md5());
+		EVP_SignInit(&ctx,s->ctx->rsa_md5);
 		EVP_SignUpdate(&ctx,s->s2->key_material,
 			(unsigned int)s->s2->key_material_length);
 		EVP_SignUpdate(&ctx,cert_ch,(unsigned int)cert_ch_len);
@@ -856,12 +861,15 @@ SSL *s;
 	if (!s->hit) /* new session */
 		{
 		/* new session-id */
+		/* Make sure we were not trying to re-use an old SSL_SESSION
+		 * or bad things can happen */
+		/* ZZZZZZZZZZZZZ */
 		s->session->session_id_length=SSL2_SSL_SESSION_ID_LENGTH;
 		memcpy(s->session->session_id,p,SSL2_SSL_SESSION_ID_LENGTH);
 		}
 	else
 		{
-		if (!(s->ctx->options & SSL_OP_MICROSOFT_SESS_ID_BUG))
+		if (!(s->options & SSL_OP_MICROSOFT_SESS_ID_BUG))
 			{
 			if (memcmp(buf,s->session->session_id,
 				(unsigned int)s->session->session_id_length) != 0)

@@ -1,5 +1,5 @@
 /* ssl/s3_meth.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -60,12 +60,18 @@
 #include "objects.h"
 #include "ssl_locl.h"
 
+#ifndef NOPROTO
+static SSL_METHOD *ssl3_get_method(int ver);
+#else
+static SSL_METHOD *ssl3_get_method();
+#endif
+
 static SSL_METHOD *ssl3_get_method(ver)
 int ver;
 	{
-	if (ver == 3)
+	if (ver == SSL3_VERSION)
 		return(SSLv3_method());
-	else
+	else 
 		return(NULL);
 	}
 
