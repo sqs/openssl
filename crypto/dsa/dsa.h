@@ -1,5 +1,5 @@
 /* crypto/dsa/dsa.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -71,6 +71,8 @@ extern "C" {
 
 #include "bn.h"
 
+#define DSA_FLAG_CACHE_MONT_P	0x01
+
 typedef struct dsa_st
 	{
 	/* This first variable is used to pick up errors where
@@ -88,8 +90,18 @@ typedef struct dsa_st
 	BIGNUM *kinv;	/* Signing pre-calc */
 	BIGNUM *r;	/* Signing pre-calc */
 
+	int flags;
+	/* Normally used to cache montgomery values */
+	char *method_mont_p;
+
 	int references;
 	} DSA;
+
+typedef struct DSA_SIG_st
+	{
+	BIGNUM *r;
+	BIGNUM *s;
+	} DSA_SIG;
 
 #define DSAparams_dup(x) (DSA *)ASN1_dup((int (*)())i2d_DSAparams, \
 		(char *(*)())d2i_DSAparams,(char *)(x))
@@ -104,9 +116,17 @@ typedef struct dsa_st
 
 #ifndef NOPROTO
 
+DSA_SIG * DSA_SIG_new(void);
+void	DSA_SIG_free(DSA_SIG *a);
+int	i2d_DSA_SIG(DSA_SIG *a, unsigned char **pp);
+DSA_SIG * d2i_DSA_SIG(DSA_SIG **v, unsigned char **pp, long length);
+
+DSA_SIG * DSA_do_sign(unsigned char *dgst,int dlen,DSA *dsa);
+int	DSA_do_verify(unsigned char *dgst,int dgst_len,
+		DSA_SIG *sig,DSA *dsa);
+
 DSA *	DSA_new(void);
 int	DSA_size(DSA *);
-	/* DSA *	DSA_generate_key(int bits, void (*callback)()); */
 	/* next 4 return -1 on error */
 int	DSA_sign_setup( DSA *dsa,BN_CTX *ctx_in,BIGNUM **kinvp,BIGNUM **rp);
 int	DSA_sign(int type,unsigned char *dgst,int dlen,
@@ -121,7 +141,8 @@ DSA *	d2i_DSAPublicKey(DSA **a, unsigned char **pp, long length);
 DSA *	d2i_DSAPrivateKey(DSA **a, unsigned char **pp, long length);
 DSA * 	d2i_DSAparams(DSA **a, unsigned char **pp, long length);
 DSA *	DSA_generate_parameters(int bits, unsigned char *seed,int seed_len,
-		int *counter_ret, unsigned long *h_ret,void (*callback)());
+		int *counter_ret, unsigned long *h_ret,void
+		(*callback)(),char *cb_arg);
 int	DSA_generate_key(DSA *a);
 int	i2d_DSAPublicKey(DSA *a, unsigned char **pp);
 int 	i2d_DSAPrivateKey(DSA *a, unsigned char **pp);
@@ -131,14 +152,22 @@ int	i2d_DSAparams(DSA *a,unsigned char **pp);
 int	DSAparams_print(BIO *bp, DSA *x);
 int	DSA_print(BIO *bp, DSA *x, int off);
 #endif
-#ifndef WIN16
+#ifndef NO_FP_API
 int	DSAparams_print_fp(FILE *fp, DSA *x);
 int	DSA_print_fp(FILE *bp, DSA *x, int off);
 #endif
 
-int DSA_is_prime(BIGNUM *q,void (*callback)());
+int DSA_is_prime(BIGNUM *q,void (*callback)(),char *cb_arg);
 
 #else
+
+DSA_SIG * DSA_SIG_new();
+void	DSA_SIG_free();
+int	i2d_DSA_SIG();
+DSA_SIG * d2i_DSA_SIG();
+
+DSA_SIG * DSA_do_sign();
+int	DSA_do_verify();
 
 DSA *	DSA_new();
 int	DSA_size();
@@ -163,7 +192,7 @@ int	DSA_is_prime();
 int	DSAparams_print();
 int	DSA_print();
 
-#ifndef WIN16
+#ifndef NO_FP_API
 int	DSAparams_print_fp();
 int	DSA_print_fp();
 #endif
@@ -183,6 +212,11 @@ int	DSA_print_fp();
 #define DSA_F_DSA_SIGN					 106
 #define DSA_F_DSA_SIGN_SETUP				 107
 #define DSA_F_DSA_VERIFY				 108
+#define DSA_F_DSA_SIG_NEW				 109
+#define DSA_F_D2I_DSA_SIG				 110
+#define DSA_F_I2D_DSA_SIG				 111
+#define DSA_F_DSA_DO_SIGN				 112
+#define DSA_F_DSA_DO_VERIFY				 113
 
 /* Reason codes. */
 #define DSA_R_DATA_TOO_LARGE_FOR_KEY_SIZE		 100

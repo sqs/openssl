@@ -60,6 +60,7 @@
 #include "dsa.h"
 
 /* BEGIN ERROR CODES */
+#ifndef NO_ERR
 static ERR_STRING_DATA DSA_str_functs[]=
 	{
 {ERR_PACK(0,DSA_F_DSAPARAMS_PRINT,0),	"DSAparams_print"},
@@ -71,6 +72,11 @@ static ERR_STRING_DATA DSA_str_functs[]=
 {ERR_PACK(0,DSA_F_DSA_SIGN,0),	"DSA_sign"},
 {ERR_PACK(0,DSA_F_DSA_SIGN_SETUP,0),	"DSA_sign_setup"},
 {ERR_PACK(0,DSA_F_DSA_VERIFY,0),	"DSA_verify"},
+{ERR_PACK(0,DSA_F_DSA_SIG_NEW,0),	"DSA_SIG_new"},
+{ERR_PACK(0,DSA_F_D2I_DSA_SIG,0),	"d2i_DSA_SIG"},
+{ERR_PACK(0,DSA_F_I2D_DSA_SIG,0),	"i2d_DSA_SIG"},
+{ERR_PACK(0,DSA_F_DSA_DO_SIGN,0),	"DSA_do_sign"},
+{ERR_PACK(0,DSA_F_DSA_DO_VERIFY,0),	"DSA_do_verify"},
 {0,NULL},
 	};
 
@@ -80,6 +86,8 @@ static ERR_STRING_DATA DSA_str_reasons[]=
 {0,NULL},
 	};
 
+#endif
+
 void ERR_load_DSA_strings()
 	{
 	static int init=1;
@@ -87,7 +95,10 @@ void ERR_load_DSA_strings()
 	if (init)
 		{
 		init=0;
+#ifndef NO_ERR
 		ERR_load_strings(ERR_LIB_DSA,DSA_str_functs);
 		ERR_load_strings(ERR_LIB_DSA,DSA_str_reasons);
+#endif
+
 		}
 	}

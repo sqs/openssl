@@ -1,5 +1,5 @@
 /* crypto/dsa/dsatest.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -61,16 +61,12 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef WIN16
-#define APPS_WIN16
-#endif
 #include "crypto.h"
 #include "rand.h"
 #include "bio.h"
 #include "err.h"
 #include "dsa.h"
-
-#ifdef WIN16
+#ifdef WINDOWS
 #include "../bio/bss_file.c"
 #endif
 
@@ -81,7 +77,7 @@
 #endif
 
 #ifndef NOPROTO
-static void MS_CALLBACK dsa_cb(int p, int n);
+static void MS_CALLBACK dsa_cb(int p, int n, char *arg);
 #else
 static void MS_CALLBACK dsa_cb();
 #endif
@@ -129,13 +125,16 @@ char **argv;
 	int counter,ret=0,i,j;
 	unsigned char buf[256];
 	unsigned long h;
+	unsigned char sig[256];
+	int siglen;
 
 	if (bio_err == NULL)
 		bio_err=BIO_new_fp(stderr,BIO_NOCLOSE);
 
 	BIO_printf(bio_err,"test generation of DSA parameters\n");
 	BIO_printf(bio_err,"expect '.*' followed by 5 lines of '.'s and '+'s\n");
-	dsa=DSA_generate_parameters(512,seed,20,&counter,&h,dsa_cb);
+	dsa=DSA_generate_parameters(512,seed,20,&counter,&h,dsa_cb,
+		(char *)bio_err);
 
 	BIO_printf(bio_err,"seed\n");
 	for (i=0; i<20; i+=4)
@@ -181,8 +180,10 @@ char **argv;
 		BIO_printf(bio_err,"g value is wrong\n");
 		goto end;
 		}
-
-	ret=1;
+	DSA_generate_key(dsa);
+	DSA_sign(0, "12345678901234567890", 20, sig, &siglen, dsa);
+	if (DSA_verify(0, "12345678901234567890", 20, sig, siglen, dsa) == 1)
+		ret=1;
 end:
 	if (!ret)
 		ERR_print_errors(bio_err);
@@ -192,9 +193,10 @@ end:
 	return(0);
 	}
 
-static void MS_CALLBACK dsa_cb(p, n)
+static void MS_CALLBACK dsa_cb(p, n, arg)
 int p;
 int n;
+char *arg;
 	{
 	char c='*';
 	static int ok=0,num=0;
@@ -203,12 +205,12 @@ int n;
 	if (p == 1) c='+';
 	if (p == 2) { c='*'; ok++; }
 	if (p == 3) c='\n';
-	BIO_write(bio_err,&c,1);
-	BIO_flush(bio_err);
+	BIO_write((BIO *)arg,&c,1);
+	BIO_flush((BIO *)arg);
 
 	if (!ok && (p == 0) && (num > 1))
 		{
-		BIO_printf(bio_err,"error in dsatest\n");
+		BIO_printf((BIO *)arg,"error in dsatest\n");
 		exit(1);
 		}
 	}
