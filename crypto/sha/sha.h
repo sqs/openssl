@@ -1,5 +1,5 @@
 /* crypto/sha/sha.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -70,11 +70,17 @@ extern "C" {
 #define SHA_LENGTH_BLOCK 8
 #define SHA_DIGEST_LENGTH 20
 
+#ifdef WIN16
+#define SHA_LONG unsigned long
+#else
+#define SHA_LONG unsigned int
+#endif	
+
 typedef struct SHAstate_st
 	{
-	unsigned long h0,h1,h2,h3,h4;
-	unsigned long Nl,Nh;
-	unsigned long data[SHA_LBLOCK];
+	SHA_LONG h0,h1,h2,h3,h4;
+	SHA_LONG Nl,Nh;
+	SHA_LONG data[SHA_LBLOCK];
 	int num;
 	} SHA_CTX;
 
@@ -83,19 +89,23 @@ void SHA_Init(SHA_CTX *c);
 void SHA_Update(SHA_CTX *c, unsigned char *data, unsigned long len);
 void SHA_Final(unsigned char *md, SHA_CTX *c);
 unsigned char *SHA(unsigned char *d, unsigned long n,unsigned char *md);
+void SHA_Transform(SHA_CTX *c, unsigned char *data);
 void SHA1_Init(SHA_CTX *c);
 void SHA1_Update(SHA_CTX *c, unsigned char *data, unsigned long len);
 void SHA1_Final(unsigned char *md, SHA_CTX *c);
 unsigned char *SHA1(unsigned char *d, unsigned long n,unsigned char *md);
+void SHA1_Transform(SHA_CTX *c, unsigned char *data);
 #else
 void SHA_Init();
 void SHA_Update();
 void SHA_Final();
 unsigned char *SHA();
+void SHA_Transform();
 void SHA1_Init();
 void SHA1_Update();
 void SHA1_Final();
 unsigned char *SHA1();
+void SHA1_Transform();
 #endif
 
 #ifdef  __cplusplus
