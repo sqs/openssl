@@ -1,5 +1,5 @@
 /* ssl/ssl_asn1.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -69,6 +69,7 @@ typedef struct ssl_session_asn1_st
 	ASN1_OCTET_STRING cipher;
 	ASN1_OCTET_STRING master_key;
 	ASN1_OCTET_STRING session_id;
+	ASN1_OCTET_STRING session_id_context;
 	ASN1_OCTET_STRING key_arg;
 	ASN1_INTEGER time;
 	ASN1_INTEGER timeout;
@@ -84,7 +85,7 @@ SSL_SESSION *in;
 unsigned char **pp;
 	{
 #define LSIZE2 (sizeof(long)*2)
-	int v1=0,v2=0,v3=0;
+	int v1=0,v2=0,v3=0,v4=0;
 	unsigned char buf[4],ibuf1[LSIZE2],ibuf2[LSIZE2];
 	unsigned char ibuf3[LSIZE2],ibuf4[LSIZE2];
 	long l;
@@ -116,7 +117,7 @@ unsigned char **pp;
 		l=in->cipher_id;
 	else
 		l=in->cipher->id;
-	if (in->ssl_version == 2)
+	if (in->ssl_version == SSL2_VERSION)
 		{
 		a.cipher.length=3;
 		buf[0]=((unsigned char)(l>>16L))&0xff;
@@ -137,6 +138,10 @@ unsigned char **pp;
 	a.session_id.length=in->session_id_length;
 	a.session_id.type=V_ASN1_OCTET_STRING;
 	a.session_id.data=in->session_id;
+
+	a.session_id_context.length=in->sid_ctx_length;
+	a.session_id_context.type=V_ASN1_OCTET_STRING;
+	a.session_id_context.data=in->sid_ctx;
 
 	a.key_arg.length=in->key_arg_length;
 	a.key_arg.type=V_ASN1_OCTET_STRING;
@@ -171,6 +176,7 @@ unsigned char **pp;
 		M_ASN1_I2D_len_EXP_opt(&(a.timeout),i2d_ASN1_INTEGER,2,v2);
 	if (in->peer != NULL)
 		M_ASN1_I2D_len_EXP_opt(in->peer,i2d_X509,3,v3);
+	M_ASN1_I2D_len_EXP_opt(&a.session_id_context,i2d_ASN1_OCTET_STRING,4,v4);
 
 	M_ASN1_I2D_seq_total();
 
@@ -187,6 +193,8 @@ unsigned char **pp;
 		M_ASN1_I2D_put_EXP_opt(&(a.timeout),i2d_ASN1_INTEGER,2,v2);
 	if (in->peer != NULL)
 		M_ASN1_I2D_put_EXP_opt(in->peer,i2d_X509,3,v3);
+	M_ASN1_I2D_put_EXP_opt(&a.session_id_context,i2d_ASN1_OCTET_STRING,4,
+			       v4);
 
 	M_ASN1_I2D_finish();
 	}
@@ -221,7 +229,7 @@ long length;
 
 	os.data=NULL; os.length=0;
 	M_ASN1_D2I_get(osp,d2i_ASN1_OCTET_STRING);
-	if (ssl_version == 2)
+	if (ssl_version == SSL2_VERSION)
 		{
 		if (os.length != 3)
 			{
@@ -233,7 +241,7 @@ long length;
 			((unsigned long)os.data[1]<< 8L)|
 			 (unsigned long)os.data[2];
 		}
-	else if (ssl_version == 3)
+	else if ((ssl_version>>8) == 3)
 		{
 		if (os.length != 2)
 			{
@@ -254,9 +262,9 @@ long length;
 	ret->cipher_id=id;
 
 	M_ASN1_D2I_get(osp,d2i_ASN1_OCTET_STRING);
-	if (ssl_version == 3)
+	if ((ssl_version>>8) == SSL3_VERSION)
 		i=SSL3_MAX_SSL_SESSION_ID_LENGTH;
-	else /* if (ssl_version == 2) */
+	else /* if (ssl_version == SSL2_VERSION) */
 		i=SSL2_MAX_SSL_SESSION_ID_LENGTH;
 
 	if (os.length > i)
@@ -307,6 +315,21 @@ long length;
 		ret->peer=NULL;
 		}
 	M_ASN1_D2I_get_EXP_opt(ret->peer,d2i_X509,3);
+
+	os.length=0;
+	os.data=NULL;
+	M_ASN1_D2I_get_EXP_opt(osp,d2i_ASN1_OCTET_STRING,4);
+
+	if(os.data != NULL)
+	    {
+	    if (os.length > SSL_MAX_SID_CTX_LENGTH)
+		SSLerr(SSL_F_D2I_SSL_SESSION,SSL_R_BAD_LENGTH);
+	    ret->sid_ctx_length=os.length;
+	    memcpy(ret->sid_ctx,os.data,os.length);
+	    Free(os.data); os.data=NULL; os.length=0;
+	    }
+	else
+	    ret->sid_ctx_length=0;
 
 	M_ASN1_D2I_Finish(a,SSL_SESSION_free,SSL_F_D2I_SSL_SESSION);
 	}
