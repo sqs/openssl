@@ -1,5 +1,5 @@
 /* apps/ca.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -97,6 +97,7 @@
 #define ENV_PRIVATE_KEY		"private_key"
 #define ENV_RANDFILE		"RANDFILE"
 #define ENV_DEFAULT_DAYS 	"default_days"
+#define ENV_DEFAULT_STARTDATE 	"default_startdate"
 #define ENV_DEFAULT_CRL_DAYS 	"default_crl_days"
 #define ENV_DEFAULT_CRL_HOURS 	"default_crl_hours"
 #define ENV_DEFAULT_MD		"default_md"
@@ -139,6 +140,7 @@ static char *ca_usage[]={
 " -outdir dir     - Where to put output certificates\n",
 " -infiles ....   - The last argument, requests to process\n",
 " -spkac file     - File contains DN and signed public key and challenge\n",
+" -ss_cert file   - File contains a self signed cert to sign\n",
 " -preserveDN     - Don't re-order the DN\n",
 " -batch	  - Don't ask questions\n",
 " -msie_hack	  - msie modifications to handle all thos universal strings\n",
@@ -163,16 +165,19 @@ static int index_name_cmp(char **a,char **b);
 static BIGNUM *load_serial(char *serialfile);
 static int save_serial(char *serialfile, BIGNUM *serial);
 static int certify(X509 **xret, char *infile,EVP_PKEY *pkey,X509 *x509,
-	EVP_MD *dgst,STACK *policy,TXT_DB *db,BIGNUM *serial,int days,
-	int batch, STACK *extensions,int verbose);
+	EVP_MD *dgst,STACK *policy,TXT_DB *db,BIGNUM *serial,char *startdate,
+	int days, int batch, STACK *extensions,int verbose);
+static int certify_cert(X509 **xret, char *infile,EVP_PKEY *pkey,X509 *x509,
+	EVP_MD *dgst,STACK *policy,TXT_DB *db,BIGNUM *serial,char *startdate,
+	int days,int batch,STACK *extensions,int verbose);
 static int certify_spkac(X509 **xret, char *infile,EVP_PKEY *pkey,X509 *x509,
-	EVP_MD *dgst,STACK *policy,TXT_DB *db,BIGNUM *serial,int days,
-	STACK *extensions,int verbose);
+	EVP_MD *dgst,STACK *policy,TXT_DB *db,BIGNUM *serial,char *startdate,
+	int days,STACK *extensions,int verbose);
 static int fix_data(int nid, int *type);
 static void write_new_certificate(BIO *bp, X509 *x, int output_der);
 static int do_body(X509 **xret, EVP_PKEY *pkey, X509 *x509, EVP_MD *dgst,
-	STACK *policy, TXT_DB *db, BIGNUM *serial, int days, int batch,
-	int verbose, X509_REQ *req, STACK *extensions);
+	STACK *policy, TXT_DB *db, BIGNUM *serial, char *startdate,
+	int days, int batch, int verbose, X509_REQ *req, STACK *extensions);
 static int check_time_format(char *str);
 #else
 static STACK *load_extensions();
@@ -187,6 +192,7 @@ static int fix_data();
 static BIGNUM *load_serial();
 static int save_serial();
 static int certify();
+static int certify_cert();
 static int certify_spkac();
 static void write_new_certificate();
 static int do_body();
@@ -221,6 +227,7 @@ char **argv;
 	char *certfile=NULL;
 	char *infile=NULL;
 	char *spkac_file=NULL;
+	char *ss_cert_file=NULL;
 	EVP_PKEY *pkey=NULL;
 	int output_der = 0;
 	char *outfile=NULL;
@@ -228,6 +235,7 @@ char **argv;
 	char *serialfile=NULL;
 	char *extensions=NULL;
 	BIGNUM *serial=NULL;
+	char *startdate=NULL;
 	int days=0;
 	int batch=0;
 	X509 *x509=NULL;
@@ -263,7 +271,7 @@ EF_ALIGNMENT=0;
 	preserve=0;
 	if (bio_err == NULL)
 		if ((bio_err=BIO_new(BIO_s_file())) != NULL)
-			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE);
+			BIO_set_fp(bio_err,stderr,BIO_NOCLOSE|BIO_FP_TEXT);
 
 	argc--;
 	argv++;
@@ -280,6 +288,11 @@ EF_ALIGNMENT=0;
 			{
 			if (--argc < 1) goto bad;
 			section= *(++argv);
+			}
+		else if (strcmp(*argv,"-startdate") == 0)
+			{
+			if (--argc < 1) goto bad;
+			startdate= *(++argv);
 			}
 		else if (strcmp(*argv,"-days") == 0)
 			{
@@ -352,6 +365,12 @@ EF_ALIGNMENT=0;
 			req=1;
 			break;
 			}
+		else if (strcmp(*argv, "-ss_cert") == 0)
+			{
+			if (--argc < 1) goto bad;
+			ss_cert_file = *(++argv);
+			req=1;
+			}
 		else if (strcmp(*argv, "-spkac") == 0)
 			{
 			if (--argc < 1) goto bad;
@@ -412,6 +431,29 @@ bad:
 			}
 		}
 
+	if (conf != NULL)
+		{
+		p=CONF_get_string(conf,NULL,"oid_file");
+		if (p != NULL)
+			{
+			BIO *oid_bio;
+
+			oid_bio=BIO_new_file(p,"r");
+			if (oid_bio == NULL) 
+				{
+				/*
+				BIO_printf(bio_err,"problems opening %s for extra oid's\n",p);
+				ERR_print_errors(bio_err);
+				*/
+				}
+			else
+				{
+				OBJ_create_objects(oid_bio);
+				BIO_free(oid_bio);
+				}
+			}
+		}
+
 	in=BIO_new(BIO_s_file());
 	out=BIO_new(BIO_s_file());
 	Sout=BIO_new(BIO_s_file());
@@ -468,6 +510,12 @@ bad:
 	if (x509 == NULL)
 		{
 		BIO_printf(bio_err,"unable to load CA certificate\n");
+		goto err;
+		}
+
+	if (!X509_check_private_key(x509,pkey))
+		{
+		BIO_printf(bio_err,"CA certificate and CA private key do not match\n");
 		goto err;
 		}
 
@@ -570,7 +618,7 @@ bad:
 		}
 	if (verbose)
 		{
-		BIO_set_fp(out,stdout,BIO_NOCLOSE); /* cannot fail */
+		BIO_set_fp(out,stdout,BIO_NOCLOSE|BIO_FP_TEXT); /* cannot fail */
 		TXT_DB_write(out,db);
 		BIO_printf(bio_err,"%d entries loaded from the database\n",
 			db->data->num);
@@ -605,7 +653,7 @@ bad:
 				}
 			}
 		else
-			BIO_set_fp(Sout,stdout,BIO_NOCLOSE);
+			BIO_set_fp(Sout,stdout,BIO_NOCLOSE|BIO_FP_TEXT);
 		}
 
 	if (req)
@@ -647,6 +695,22 @@ bad:
 				goto err;
 			}
 
+		if (startdate == NULL)
+			{
+			startdate=(char *)CONF_get_string(conf,section,
+				ENV_DEFAULT_STARTDATE);
+			if (startdate == NULL)
+				startdate="today";
+			else
+				{
+				if (!ASN1_UTCTIME_set_string(NULL,startdate))
+					{
+					BIO_printf(bio_err,"start date is invalid, it should be YYMMDDHHMMSS\n");
+					goto err;
+					}
+				}
+			}
+
 		if (days == 0)
 			{
 			days=(int)CONF_get_number(conf,section,
@@ -665,7 +729,7 @@ bad:
 			}
 		if (verbose)
 			{
-			if ((f=BN_bn2ascii(serial)) == NULL) goto err;
+			if ((f=BN_bn2hex(serial)) == NULL) goto err;
 			BIO_printf(bio_err,"next serial number is %s\n",f);
 			Free(f);
 			}
@@ -685,7 +749,7 @@ bad:
 			{
 			total++;
 			j=certify_spkac(&x,spkac_file,pkey,x509,dgst,attribs,db,
-				serial,days,extensions_sk,verbose);
+				serial,startdate,days,extensions_sk,verbose);
 			if (j < 0) goto err;
 			if (j > 0)
 				{
@@ -704,11 +768,31 @@ bad:
 					}
 				}
 			}
+		if (ss_cert_file != NULL)
+			{
+			total++;
+			j=certify_cert(&x,ss_cert_file,pkey,x509,dgst,attribs,
+				db,serial,startdate,days,batch,
+				extensions_sk,verbose);
+			if (j < 0) goto err;
+			if (j > 0)
+				{
+				total_done++;
+				BIO_printf(bio_err,"\n");
+				if (!BN_add_word(serial,1)) goto err;
+				if (!sk_push(cert_sk,(char *)x))
+					{
+					BIO_printf(bio_err,"Malloc failure\n");
+					goto err;
+					}
+				}
+			}
 		if (infile != NULL)
 			{
 			total++;
 			j=certify(&x,infile,pkey,x509,dgst,attribs,db,
-				serial,days,batch,extensions_sk,verbose);
+				serial,startdate,days,batch,
+				extensions_sk,verbose);
 			if (j < 0) goto err;
 			if (j > 0)
 				{
@@ -726,7 +810,8 @@ bad:
 			{
 			total++;
 			j=certify(&x,argv[i],pkey,x509,dgst,attribs,db,
-				serial,days,batch,extensions_sk,verbose);
+				serial,startdate,days,batch,
+				extensions_sk,verbose);
 			if (j < 0) goto err;
 			if (j > 0)
 				{
@@ -798,7 +883,7 @@ bad:
 				{
 				for (k=0; k<j; k++)
 					{
-					sprintf((char *)n,"%02X",*(p++));
+					sprintf((char *)n,"%02X",(unsigned char)*(p++));
 					n+=2;
 					}
 				}
@@ -893,6 +978,8 @@ bad:
 		if (ci->issuer == NULL) goto err;
 
 		X509_gmtime_adj(ci->lastUpdate,0);
+		if (ci->nextUpdate == NULL)
+			ci->nextUpdate=ASN1_UTCTIME_new();
 		X509_gmtime_adj(ci->nextUpdate,(crldays*24+crlhours)*60*60);
 
 		for (i=0; i<sk_num(db->data); i++)
@@ -925,7 +1012,7 @@ bad:
 			r->sequence=i;
 			}
 
-		/* we how have a CRL */
+		/* we now have a CRL */
 		if (verbose) BIO_printf(bio_err,"signing CRL\n");
 		if (md != NULL)
 			{
@@ -937,6 +1024,10 @@ bad:
 			}
 		else
 			dgst=EVP_md5();
+#ifndef NO_DSA
+		if (pkey->type == EVP_PKEY_DSA) 
+		    dgst = EVP_dss1() ;
+#endif
 		if (!X509_CRL_sign(crl,pkey,dgst)) goto err;
 
 		PEM_write_bio_X509_CRL(Sout,crl);
@@ -1092,7 +1183,7 @@ err:
 	return(ret);
 	}
 
-static int certify(xret,infile,pkey,x509,dgst,policy,db,serial,days,
+static int certify(xret,infile,pkey,x509,dgst,policy,db,serial,startdate,days,
 	batch,extensions,verbose)
 X509 **xret;
 char *infile;
@@ -1102,6 +1193,7 @@ EVP_MD *dgst;
 STACK *policy;
 TXT_DB *db;
 BIGNUM *serial;
+char *startdate;
 int days;
 int batch;
 STACK *extensions;
@@ -1130,15 +1222,6 @@ int verbose;
 
 	BIO_printf(bio_err,"Check that the request matches the signature\n");
 
-	if (	(req->req_info == NULL) ||
-		(req->req_info->pubkey == NULL) ||
-		(req->req_info->pubkey->public_key == NULL) ||
-		(req->req_info->pubkey->public_key->data == NULL))
-		{
-		BIO_printf(bio_err,"The certificate request appears to corrupted\n");
-		BIO_printf(bio_err,"It does not contain a public key\n");
-		goto err;
-		}
 	if ((pktmp=X509_REQ_get_pubkey(req)) == NULL)
 		{
 		BIO_printf(bio_err,"error unpacking public key\n");
@@ -1160,8 +1243,8 @@ int verbose;
 	else
 		BIO_printf(bio_err,"Signature ok\n");
 
-	ok=do_body(xret,pkey,x509,dgst,policy,db,serial,days,batch,verbose,req,
-		extensions);
+	ok=do_body(xret,pkey,x509,dgst,policy,db,serial,startdate,
+		days,batch,verbose,req,extensions);
 
 err:
 	if (req != NULL) X509_REQ_free(req);
@@ -1169,8 +1252,81 @@ err:
 	return(ok);
 	}
 
-static int do_body(xret,pkey,x509,dgst,policy,db,serial,days,batch,verbose,req,
-	extensions)
+static int certify_cert(xret,infile,pkey,x509,dgst,policy,db,serial,startdate,
+	days, batch,extensions,verbose)
+X509 **xret;
+char *infile;
+EVP_PKEY *pkey;
+X509 *x509;
+EVP_MD *dgst;
+STACK *policy;
+TXT_DB *db;
+BIGNUM *serial;
+char *startdate;
+int days;
+int batch;
+STACK *extensions;
+int verbose;
+	{
+	X509 *req=NULL;
+	X509_REQ *rreq=NULL;
+	BIO *in=NULL;
+	EVP_PKEY *pktmp=NULL;
+	int ok= -1,i;
+
+	in=BIO_new(BIO_s_file());
+
+	if (BIO_read_filename(in,infile) <= 0)
+		{
+		perror(infile);
+		goto err;
+		}
+	if ((req=PEM_read_bio_X509(in,NULL,NULL)) == NULL)
+		{
+		BIO_printf(bio_err,"Error reading self signed certificate in %s\n",infile);
+		goto err;
+		}
+	if (verbose)
+		X509_print(bio_err,req);
+
+	BIO_printf(bio_err,"Check that the request matches the signature\n");
+
+	if ((pktmp=X509_get_pubkey(req)) == NULL)
+		{
+		BIO_printf(bio_err,"error unpacking public key\n");
+		goto err;
+		}
+	i=X509_verify(req,pktmp);
+	if (i < 0)
+		{
+		ok=0;
+		BIO_printf(bio_err,"Signature verification problems....\n");
+		goto err;
+		}
+	if (i == 0)
+		{
+		ok=0;
+		BIO_printf(bio_err,"Signature did not match the certificate\n");
+		goto err;
+		}
+	else
+		BIO_printf(bio_err,"Signature ok\n");
+
+	if ((rreq=X509_to_X509_REQ(req,NULL,EVP_md5())) == NULL)
+		goto err;
+
+	ok=do_body(xret,pkey,x509,dgst,policy,db,serial,startdate,days,
+		batch,verbose,rreq,extensions);
+
+err:
+	if (rreq != NULL) X509_REQ_free(rreq);
+	if (req != NULL) X509_free(req);
+	if (in != NULL) BIO_free(in);
+	return(ok);
+	}
+
+static int do_body(xret,pkey,x509,dgst,policy,db,serial,startdate,days,
+	batch,verbose,req, extensions)
 X509 **xret;
 EVP_PKEY *pkey;
 X509 *x509;
@@ -1178,6 +1334,7 @@ EVP_MD *dgst;
 STACK *policy;
 TXT_DB *db;
 BIGNUM *serial;
+char *startdate;
 int days;
 int batch;
 int verbose;
@@ -1185,7 +1342,7 @@ X509_REQ *req;
 STACK *extensions;
 	{
 	X509_NAME *name=NULL,*CAname=NULL,*subject=NULL;
-	ASN1_UTCTIME *tm;
+	ASN1_UTCTIME *tm,*tmptm;
 	ASN1_STRING *str,*str2;
 	ASN1_OBJECT *obj;
 	X509 *ret=NULL;
@@ -1199,6 +1356,13 @@ STACK *extensions;
 	CONF_VALUE *cv;
 	char *row[DB_NUMBER],**rrow,**irow=NULL;
 	char buf[25],*pbuf;
+
+	tmptm=ASN1_UTCTIME_new();
+	if (tmptm == NULL)
+		{
+		BIO_printf(bio_err,"malloc error\n");
+		return(0);
+		}
 
 	for (i=0; i<DB_NUMBER; i++)
 		row[i]=NULL;
@@ -1399,7 +1563,7 @@ again2:
 		BIO_printf(bio_err,"The subject name apears to be ok, checking data base for clashes\n");
 
 	row[DB_name]=X509_NAME_oneline(subject,NULL,0);
-	row[DB_serial]=BN_bn2ascii(serial);
+	row[DB_serial]=BN_bn2hex(serial);
 	if ((row[DB_name] == NULL) || (row[DB_serial] == NULL))
 		{
 		BIO_printf(bio_err,"Malloc failure\n");
@@ -1471,8 +1635,16 @@ again2:
 		goto err;
 
 	BIO_printf(bio_err,"Certificate is to be certified until ");
-	X509_gmtime_adj(X509_get_notBefore(ret),0);
-	X509_gmtime_adj(X509_get_notAfter(ret),(long)60*60*24*days);
+	if (strcmp(startdate,"today") == 0)
+		{
+		X509_gmtime_adj(X509_get_notBefore(ret),0);
+		X509_gmtime_adj(X509_get_notAfter(ret),(long)60*60*24*days);
+		}
+	else
+		{
+		/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
+		ASN1_UTCTIME_set_string(X509_get_notBefore(ret),startdate);
+		}
 	ASN1_UTCTIME_print(bio_err,X509_get_notAfter(ret));
 	BIO_printf(bio_err," (%d days)\n",days);
 
@@ -1521,6 +1693,8 @@ again2:
 			goto err;
 			}
 		}
+
+	if (pkey->type == EVP_PKEY_DSA) dgst=EVP_dss1();
 
 #ifndef NO_DSA
         pktmp=X509_get_pubkey(ret);
@@ -1623,8 +1797,8 @@ int output_der;
 	BIO_puts(bp,"\n");
 	}
 
-static int certify_spkac(xret,infile,pkey,x509,dgst,policy,db,serial,days,
-	extensions,verbose)
+static int certify_spkac(xret,infile,pkey,x509,dgst,policy,db,serial,
+	startdate,days,extensions,verbose)
 X509 **xret;
 char *infile;
 EVP_PKEY *pkey;
@@ -1633,6 +1807,7 @@ EVP_MD *dgst;
 STACK *policy;
 TXT_DB *db;
 BIGNUM *serial;
+char *startdate;
 int days;
 STACK *extensions;
 int verbose;
@@ -1778,8 +1953,8 @@ int verbose;
 	BIO_printf(bio_err,"Signature ok\n");
 
 	X509_REQ_set_pubkey(req,pktmp);
-	ok=do_body(xret,pkey,x509,dgst,policy,db,serial,days,1,verbose,req,
-		extensions);
+	ok=do_body(xret,pkey,x509,dgst,policy,db,serial,startdate,
+		days,1,verbose,req,extensions);
 err:
 	if (req != NULL) X509_REQ_free(req);
 	if (parms != NULL) CONF_free(parms);
@@ -1882,7 +2057,7 @@ char *sec;
 		default:
 			BIO_printf(bio_err,"Don't know how to pack extension %s\n",cv->name);
 			goto err;
-			break;
+			/* break; */
 			}
 
 		if ((x=X509_EXTENSION_create_by_NID(NULL,nid,0,str)) == NULL)
