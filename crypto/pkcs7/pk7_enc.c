@@ -1,5 +1,5 @@
 /* crypto/pkcs7/pk7_enc.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -58,11 +58,11 @@
 
 #include <stdio.h>
 #include "cryptlib.h"
-#include "evp.h"
-#include "rand.h"
-#include "objects.h"
-#include "x509.h"
-#include "pkcs7.h"
+#include <openssl/evp.h>
+#include <openssl/rand.h>
+#include <openssl/objects.h>
+#include <openssl/x509.h>
+#include <openssl/pkcs7.h>
 
 PKCS7_in_bio(PKCS7 *p7,BIO *in);
 PKCS7_out_bio(PKCS7 *p7,BIO *out);

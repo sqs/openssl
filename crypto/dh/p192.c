@@ -1,5 +1,5 @@
 /* crypto/dh/p192.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -57,10 +57,10 @@
  */
 
 #include <stdio.h>
-#include "bn.h"
-#include "asn1.h"
-#include "dh.h"
-#include "pem.h"
+#include <openssl/bn.h>
+#include <openssl/asn1.h>
+#include <openssl/dh.h>
+#include <openssl/pem.h>
 
 unsigned char data[]={
 0xD4,0xA0,0xBA,0x02,0x50,0xB6,0xFD,0x2E,

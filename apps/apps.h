@@ -1,5 +1,5 @@
 /* apps/apps.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -59,18 +59,14 @@
 #ifndef HEADER_APPS_H
 #define HEADER_APPS_H
 
-#ifdef FLAT_INC
-#include "e_os.h"
-#else
-#include "../e_os.h"
-#endif
+#include <openssl/e_os.h>
 
-#include "buffer.h"
-#include "bio.h"
-#include "crypto.h"
+#include <openssl/buffer.h>
+#include <openssl/bio.h>
+#include <openssl/crypto.h>
 #include "progs.h"
 
-#ifdef WIN16
+#ifdef NO_STDIO
 BIO_METHOD *BIO_s_file();
 #endif
 
@@ -92,7 +88,7 @@ extern BIO *bio_err;
 #else
 
 #define MAIN(a,v)	PROG(a,v)
-#include "conf.h"
+#include <openssl/conf.h>
 extern LHASH *config;
 extern char *default_config_file;
 extern BIO *bio_err;

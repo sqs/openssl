@@ -1,5 +1,5 @@
 /* bugs/stream.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -57,11 +57,11 @@
  */
 
 #include <stdio.h>
-#include "rc4.h"
+#include <openssl/rc4.h>
 #ifdef NO_DES
 #include <des.h>
 #else
-#include "des.h"
+#include <openssl/des.h>
 #endif
 
 /* show how stream ciphers are not very good.  The mac has no affect

@@ -1,5 +1,5 @@
 /* crypto/txt_db/txt_db.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -63,8 +63,8 @@
 extern "C" {
 #endif
 
-#include "stack.h"
-#include "lhash.h"
+#include <openssl/stack.h>
+#include <openssl/lhash.h>
 
 #define DB_ERROR_OK			0
 #define DB_ERROR_MALLOC			1

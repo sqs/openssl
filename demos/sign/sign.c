@@ -1,5 +1,5 @@
 /* demos/sign/sign.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,13 +62,13 @@
 /* converted to C - eay :-) */
 
 #include <stdio.h>
-#include "rsa.h"
-#include "evp.h"
-#include "objects.h"
-#include "x509.h"
-#include "err.h"
-#include "pem.h"
-#include "ssl.h"
+#include <openssl/rsa.h>
+#include <openssl/evp.h>
+#include <openssl/objects.h>
+#include <openssl/x509.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
 
 void main ()
 {

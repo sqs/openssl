@@ -12,8 +12,8 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include "err.h"
-#include "ssl.h"
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
 #define CERT_FILE	"server.pem"
 
@@ -70,7 +70,7 @@ char *argv[];
 
 again:
 	/* The first call will setup the accept socket, and the second
-	 * will get a socket.  In this loop, the first actuall accept
+	 * will get a socket.  In this loop, the first actual accept
 	 * will occur in the BIO_read() function. */
 
 	if (BIO_do_accept(in) <= 0) goto err;

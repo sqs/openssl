@@ -1,5 +1,5 @@
 /* ssl/ssl_task.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -123,11 +123,11 @@ int LIB$INIT_TIMER(), LIB$SHOW_TIMER();
 
 #include <string.h>		/* from ssltest.c */
 #include <errno.h>
-#include "buffer.h"
+#include <openssl/buffer.h>
 #include "../e_os.h"
-#include "x509.h"
-#include "ssl.h"
-#include "err.h"
+#include <openssl/x509.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 int MS_CALLBACK verify_callback(int ok, X509 *xs, X509 *xi, int depth,
 	int error);

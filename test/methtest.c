@@ -1,5 +1,5 @@
 /* test/methtest.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -58,10 +58,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "rsa.h"
-#include "x509.h"
+#include <openssl/rsa.h>
+#include <openssl/x509.h>
 #include "meth.h"
-#include "err.h"
+#include <openssl/err.h>
 
 int main(argc,argv)
 int argc;

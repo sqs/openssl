@@ -1,5 +1,5 @@
 /* crypto/bio/b_print.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -62,7 +62,7 @@
 
 #include <stdio.h>
 #include "cryptlib.h"
-#include "bio.h"
+#include <openssl/bio.h>
 
 int BIO_printf ( VAR_PLIST( BIO *, bio ) )
 VAR_ALIST

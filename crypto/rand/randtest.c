@@ -1,5 +1,5 @@
 /* crypto/rand/randtest.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -58,7 +58,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "rand.h"
+#include <openssl/rand.h>
 
 /* some FIPS 140-1 random number test */
 /* some simple tests */
