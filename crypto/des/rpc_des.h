@@ -1,5 +1,5 @@
 /* crypto/des/rpc_des.h */
-/* Copyright (C) 1995-1997 Eric Young (eay@cryptsoft.com)
+/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
  * This package is an SSL implementation written
@@ -122,10 +122,10 @@ struct desparams {
 /*
  * Encrypt an arbitrary sized buffer
  */
-#define	DESIOCBLOCK	_IOWR(d, 6, struct desparams)
+#define	DESIOCBLOCK	_IOWR('d', 6, struct desparams)
 
 /* 
  * Encrypt of small amount of data, quickly
  */
-#define DESIOCQUICK	_IOWR(d, 7, struct desparams) 
+#define DESIOCQUICK	_IOWR('d', 7, struct desparams) 
 
