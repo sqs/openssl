@@ -421,8 +421,10 @@ static void sv_usage(void)
 	fprintf(stderr," -psk arg      - PSK in hex (without 0x)\n");
 #endif
 #ifndef OPENSSL_NO_SRP
-	fprintf(stderr," -srpuser user  - SRP username to use\n");
-	fprintf(stderr," -srppass arg   - password for 'user'\n");
+	fprintf(stderr," -server_srpuser user  - server-side SRP username to use\n");
+	fprintf(stderr," -server_srppass arg   - server-side password for 'user'\n");
+	fprintf(stderr," -client_srpuser user  - client-side SRP username to use\n");
+	fprintf(stderr," -client_srppass arg   - client-side password for 'user'\n");
 #endif
 #ifndef OPENSSL_NO_SSL2
 	fprintf(stderr," -ssl2         - use SSLv2\n");
@@ -722,16 +724,28 @@ int main(int argc, char *argv[])
 #endif
 			}
 #ifndef OPENSSL_NO_SRP
-		else if (strcmp(*argv,"-srpuser") == 0)
+		else if (strcmp(*argv,"-client_srpuser") == 0)
 			{
 			if (--argc < 1) goto bad;
-			srp_server_arg.expected_user = srp_client_arg.srplogin= *(++argv);
+			srp_client_arg.srplogin= *(++argv);
 			tls1=1;
 			}
-		else if (strcmp(*argv,"-srppass") == 0)
+		else if (strcmp(*argv,"-client_srppass") == 0)
 			{
 			if (--argc < 1) goto bad;
-			srp_server_arg.pass = srp_client_arg.srppassin= *(++argv);
+			srp_client_arg.srppassin= *(++argv);
+			tls1=1;
+			}
+                else if (strcmp(*argv,"-server_srpuser") == 0)
+			{
+			if (--argc < 1) goto bad;
+			srp_server_arg.expected_user= *(++argv);
+			tls1=1;
+			}
+		else if (strcmp(*argv,"-server_srppass") == 0)
+			{
+			if (--argc < 1) goto bad;
+			srp_server_arg.pass= *(++argv);
 			tls1=1;
 			}
 #endif
