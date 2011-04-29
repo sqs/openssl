@@ -374,7 +374,6 @@ static char *cipher=NULL;
 static int verbose=0;
 static int debug=0;
 static unsigned long server_err=0;
-static unsigned long client_err=0;
 #if 0
 /* Not used yet. */
 #ifdef FIONBIO
@@ -399,7 +398,6 @@ static void sv_usage(void)
 	fprintf(stderr," -v            - more output\n");
 	fprintf(stderr," -d            - debug output\n");
 	fprintf(stderr," -server_err <str> - substring of expected server error\n");
-	fprintf(stderr," -client_err <str> - substring of expected client error\n");
 	fprintf(stderr," -reuse        - use session-id reuse\n");
 	fprintf(stderr," -num <val>    - number of connections to perform\n");
 	fprintf(stderr," -bytes <val>  - number of bytes to swap between client/server\n");
@@ -606,7 +604,6 @@ int main(int argc, char *argv[])
 	int number=1,reuse=0;
 	long bytes=256L;
 	char *expect_server_err=NULL;
-	char *expect_client_err=NULL;
 #ifndef OPENSSL_NO_DH
 	DH *dh;
 	int dhe1024 = 0, dhe1024dsa = 0;
@@ -762,11 +759,6 @@ int main(int argc, char *argv[])
 			i=strlen(argv[0]);
 			if (argv[0][i-1] == 'k') bytes*=1024L;
 			if (argv[0][i-1] == 'm') bytes*=1024L*1024L;
-			}
-		else if (strcmp(*argv,"-client_err") == 0)
-			{
-			if (--argc < 1) goto bad;
-			expect_client_err= *(++argv);
 			}
 		else if (strcmp(*argv,"-server_err") == 0)
 			{
@@ -1253,17 +1245,6 @@ end:
 			{
 			fprintf(stderr, "EXPECTED SERVER ERROR: '%s'\n",
 				expect_server_err);
-			ret = 1;
-			}
-		else
-			ret = 0;
-		}
-	if (expect_client_err)
-		{
-		if (strstr(ERR_error_string(client_err, NULL), expect_client_err) == NULL)
-			{
-			fprintf(stderr, "EXPECTED CLIENT ERROR: '%s'\n",
-				expect_client_err);
 			ret = 1;
 			}
 		else
