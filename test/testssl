@@ -162,17 +162,28 @@ $ssltest -bio_pair -tls1 -npn_client -npn_server -num 2 -reuse || exit 1
 if ../util/shlib_wrap.sh ../apps/openssl no-srp; then
   echo skipping SRP tests
 else
+  srp_nocert='!aRSA:!DSS:SRP'
+  good_srp_credentials="-client_srpuser test -client_srppass abc123 -server_srpuser test -server_srppass abc123"
+
   echo test tls1 with SRP
-  $ssltest -tls1 -cipher '!aRSA:!DSS:SRP' -srpuser test -srppass abc123 || exit 1  
+  $ssltest -tls1 -cipher $srp_nocert $good_srp_credentials || exit 1  
 
   echo test tls1 with SRP via BIO pair
-  $ssltest -bio_pair -tls1 -cipher '!aRSA:!DSS:SRP' -srpuser test -srppass abc123 || exit 1
+  $ssltest -bio_pair -tls1 -cipher $srp_nocert $good_srp_credentials || exit 1
 
   echo test tls1 with SRP-RSA
-  $ssltest -tls1 -server_auth -cipher SRP -srpuser test -srppass abc123 || exit 1
+  $ssltest -tls1 -server_auth $CA $extra -cipher SRP $good_srp_credentials || exit 1
 
   echo test tls1 with SRP-RSA via BIO pair
-  $ssltest -bio_pair -server_auth -tls1 -cipher SRP -srpuser test -srppass abc123 || exit 1
+  $ssltest -bio_pair -server_auth $CA $extra -tls1 -cipher SRP $good_srp_credentials || exit 1
+
+  echo test tls1 with SRP missing username
+  $ssltest -tls1 -cipher $srp_nocert -client_srpuser testbad -client_srppass abc123 -server_srpuser test -server_srppass abc123 -server_err 'missing srp username' || exit 1
+  $ssltest -tls1 -cipher $srp_nocert -server_srpuser test -server_srppass abc123 -server_err 'missing srp username' || exit 1
+  $ssltest -tls1 -cipher $srp_nocert -client_srpuser test -client_srppass abc123 -server_err 'no shared cipher' || exit 1
+
+  echo test tls1 with SRP using bad password
+  $ssltest -tls1 -cipher $srp_nocert -client_srpuser test -client_srppass BADCLI -server_srpuser test -server_srppass BADSRV -server_err 'decryption failed or bad record mac' || exit 1
 fi
 
 exit 0
