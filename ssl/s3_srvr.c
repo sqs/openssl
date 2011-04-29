@@ -193,8 +193,8 @@ static int SSL_check_srp_ext_ClientHello(SSL *s,int *ad)
 		if(s->srp_ctx.login == NULL)
 			{
 			/* There isn't any srp login extension !!! */
-			ret = SSL3_AL_WARNING;
-			*ad = SSL_AD_MISSING_SRP_USERNAME;
+			ret = SSL3_AL_FATAL;
+			*ad = SSL_AD_UNKNOWN_PSK_IDENTITY;
 			}
 		else
 			{
@@ -217,9 +217,6 @@ int ssl3_accept(SSL *s)
 	void (*cb)(const SSL *ssl,int type,int val)=NULL;
 	int ret= -1;
 	int new_state,state,skip=0;
-#ifndef OPENSSL_NO_SRP
-	int srp_no_username =0;
-#endif
 
 	RAND_add(&Time,sizeof(Time),0);
 	ERR_clear_error();
@@ -354,19 +351,8 @@ int ssl3_accept(SSL *s)
 			if ((al = SSL_check_srp_ext_ClientHello(s,&extension_error)) != SSL_ERROR_NONE)
 				{
 				ssl3_send_alert(s,al,extension_error);
-				if (extension_error == SSL_AD_MISSING_SRP_USERNAME)
-					{
-					if (srp_no_username) goto end;
-					ERR_clear_error();
-					srp_no_username = 1;
-					s->state=SSL3_ST_SR_CLNT_HELLO_SRP_USERNAME;
-					if (cb != NULL) cb(s,SSL_CB_HANDSHAKE_START,1);
-					if ((ret=BIO_flush(s->wbio)) <= 0) goto end;
-					s->init_num=0;
-					break;
-					}
 				ret = -1;
-				SSLerr(SSL_F_SSL3_ACCEPT,SSL_R_CLIENTHELLO_TLSEXT);
+				SSLerr(SSL_F_SSL3_ACCEPT,SSL_R_MISSING_SRP_USERNAME);
 				goto end;
 				}
 			}
