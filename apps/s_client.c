@@ -479,12 +479,6 @@ static char * MS_CALLBACK ssl_give_srp_client_pwd_cb(SSL *s, void *arg)
 	return pass;
 	}
 
-static char * MS_CALLBACK missing_srp_username_callback(SSL *s, void *arg)
-	{
-	SRP_ARG *srp_arg = (SRP_ARG *)arg;
-	return BUF_strdup(srp_arg->srplogin);
-	}
-
 #endif
 
 # ifndef OPENSSL_NO_NEXTPROTONEG
@@ -1149,9 +1143,7 @@ bad:
 #ifndef OPENSSL_NO_SRP
         if (srp_arg.srplogin)
 		{
-		if (srp_lateuser) 
-			SSL_CTX_set_srp_missing_srp_username_callback(ctx,missing_srp_username_callback);
-		else if (!SSL_CTX_set_srp_username(ctx, srp_arg.srplogin))
+		if (!SSL_CTX_set_srp_username(ctx, srp_arg.srplogin))
 			{
 			BIO_printf(bio_err,"Unable to set SRP username\n");
 			goto end;

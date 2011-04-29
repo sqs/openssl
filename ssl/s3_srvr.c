@@ -337,10 +337,6 @@ int ssl3_accept(SSL *s)
 		case SSL3_ST_SR_CLNT_HELLO_A:
 		case SSL3_ST_SR_CLNT_HELLO_B:
 		case SSL3_ST_SR_CLNT_HELLO_C:
-#ifndef OPENSSL_NO_SRP
-		case SSL3_ST_SR_CLNT_HELLO_SRP_USERNAME:
-#endif
-
 			s->shutdown=0;
 			ret=ssl3_get_client_hello(s);
 			if (ret <= 0) goto end;
@@ -882,11 +878,7 @@ int ssl3_get_client_hello(SSL *s)
 	 * If we are SSLv3, we will respond with SSLv3, even if prompted with
 	 * TLSv1.
 	 */
-	if (s->state == SSL3_ST_SR_CLNT_HELLO_A
-#ifndef OPENSSL_NO_SRP
-		|| (s->state == SSL3_ST_SR_CLNT_HELLO_SRP_USERNAME)
-#endif
-		)
+	if (s->state == SSL3_ST_SR_CLNT_HELLO_A)
 		{
 		s->state=SSL3_ST_SR_CLNT_HELLO_B;
 		}

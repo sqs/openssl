@@ -665,8 +665,6 @@ typedef struct srp_ctx_st
 	int (*SRP_verify_param_callback)(SSL *, void *);
 	/* set SRP client passwd callback */
 	char *(*SRP_give_srp_client_pwd_callback)(SSL *, void *);
-	/* set SRP client username callback */
-	char *(*SRP_TLS_ext_missing_srp_client_username_callback)(SSL *, void *);
 
 	char *login;
 	BIGNUM *N,*g,*s,*B,*A;
@@ -686,7 +684,6 @@ int SSL_srp_server_param_with_username(SSL *s, int *ad);
 int SRP_generate_server_master_secret(SSL *s,unsigned char *master_key);
 int SRP_Calc_A_param(SSL *s);
 int SRP_generate_client_master_secret(SSL *s,unsigned char *master_key);
-int SRP_have_to_put_srp_username(SSL *s);
 
 #endif
 
@@ -1443,8 +1440,6 @@ DECLARE_PEM_rw(SSL_SESSION, SSL_SESSION)
 #define SSL_AD_BAD_CERTIFICATE_STATUS_RESPONSE TLS1_AD_BAD_CERTIFICATE_STATUS_RESPONSE
 #define SSL_AD_BAD_CERTIFICATE_HASH_VALUE TLS1_AD_BAD_CERTIFICATE_HASH_VALUE
 #define SSL_AD_UNKNOWN_PSK_IDENTITY     TLS1_AD_UNKNOWN_PSK_IDENTITY /* fatal */
-#define SSL_AD_UNKNOWN_SRP_USERNAME	TLS1_AD_UNKNOWN_SRP_USERNAME
-#define SSL_AD_MISSING_SRP_USERNAME	TLS1_AD_MISSING_SRP_USERNAME
 
 #define SSL_ERROR_NONE			0
 #define SSL_ERROR_SSL			1
@@ -1529,14 +1524,13 @@ DECLARE_PEM_rw(SSL_SESSION, SSL_SESSION)
 
 #define SSL_CTRL_SET_TLSEXT_TICKET_KEY_CB	72
 
-#define SSL_CTRL_SET_TLS_EXT_SRP_USERNAME_CB	75
-#define SSL_CTRL_SET_SRP_VERIFY_PARAM_CB		76
-#define SSL_CTRL_SET_SRP_GIVE_CLIENT_PWD_CB		77
-#define SSL_CTRL_SET_TLS_EXT_SRP_MISSING_CLIENT_USERNAME_CB		78
-#define SSL_CTRL_SET_SRP_ARG		79
-#define SSL_CTRL_SET_TLS_EXT_SRP_USERNAME		80
-#define SSL_CTRL_SET_TLS_EXT_SRP_STRENGTH		81
-#define SSL_CTRL_SET_TLS_EXT_SRP_PASSWORD		82
+#define SSL_CTRL_SET_TLS_EXT_SRP_USERNAME_CB	73
+#define SSL_CTRL_SET_SRP_VERIFY_PARAM_CB	74
+#define SSL_CTRL_SET_SRP_GIVE_CLIENT_PWD_CB	75
+#define SSL_CTRL_SET_SRP_ARG			76
+#define SSL_CTRL_SET_TLS_EXT_SRP_USERNAME	77
+#define SSL_CTRL_SET_TLS_EXT_SRP_STRENGTH	78
+#define SSL_CTRL_SET_TLS_EXT_SRP_PASSWORD	79
 #endif
 
 #define DTLS_CTRL_GET_TIMEOUT		80
@@ -1752,8 +1746,6 @@ int SSL_CTX_set_srp_verify_param_callback(SSL_CTX *ctx,
 					  int (*cb)(SSL *,void *));
 int SSL_CTX_set_srp_username_callback(SSL_CTX *ctx,
 				      int (*cb)(SSL *,int *,void *));
-int SSL_CTX_set_srp_missing_srp_username_callback(SSL_CTX *ctx,
-						  char *(*cb)(SSL *,void *));
 int SSL_CTX_set_srp_cb_arg(SSL_CTX *ctx, void *arg);
 
 int SSL_set_srp_server_param(SSL *s, const BIGNUM *N, const BIGNUM *g,
